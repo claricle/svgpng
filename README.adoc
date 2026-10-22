@@ -1,13 +1,29 @@
 = Svgpng
 
-Svgpng renders SVG to PNG, with byte-identical output on every supported
-platform.
+Svgpng is a byte-oriented Ruby API for rendering SVG to PNG. Its public contract
+is being defined before the native renderer is implemented. The current checkout
+contains only the Ruby API shell; native rendering, package artifacts, and
+cross-platform byte-identity gates are pending. No native output or platform
+support is claimed yet.
 
-It wraps the resvg renderer, pinned to one release and shipped prebuilt for
-each platform, so nothing compiles at install time. System fonts are never
-read: fonts come only from the caller, so the same SVG and the same fonts
-always give the same PNG bytes.
+== Current status
 
-== Status
+The intended Ruby boundary and fixed rendering contract are recorded in
+link:docs/decisions/svg-to-png.md[the rendering decision]. Rendering currently
+raises `Svgpng::UnsupportedPlatformError` because no native renderer is shipped.
+Installing and requiring the Ruby shell is intended to work on any Ruby platform
+without probing system libraries.
 
-Under development.
+== Intended interface
+
+`Svgpng.render(svg_bytes, profile: {}, fonts: {}, fallback_fonts: [])` accepts
+SVG bytes and caller-supplied fonts. It returns a `Svgpng::Result` with
+`png_bytes`, `width`, `height`, `warnings`, and `font_manifest`. The API accepts
+no filesystem, network, base-directory, resource-map, or loader input. Font
+faces use `Svgpng::FontFace.new(bytes:, source_id:)`; metadata is read from the
+font bytes rather than caller declarations.
+
+The fixed limits and PNG encoding choices are design requirements, not evidence
+that native enforcement has been delivered. The decision document records the
+validation algorithm, errors, owned native components, target packages, and the
+checks still required before support can be advertised.
