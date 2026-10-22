@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "digest"
+require "rubygems/package"
+require "tmpdir"
 require "yaml"
 
 module Svgpng
@@ -146,7 +148,7 @@ module Svgpng
         paths = actual_paths
         expected = artifacts.keys.sort
         validate_set(paths, expected)
-        expected.each { |name| verify_artifact(name, artifacts.fetch(name).last) }
+        expected.each { |name| verify_artifact(name, artifacts.fetch(name)) }
         expected.map { |name| File.join(@path, name) }.freeze
       end
 
@@ -163,15 +165,18 @@ module Svgpng
         raise VerificationError, "release set mismatch; unexpected: #{extra.join(", ")}" unless extra.empty?
       end
 
-      def verify_artifact(name, expected_digest)
+      def verify_artifact(name, artifact)
+        target, expected_digest = artifact
         path = File.join(@path, name)
         raise VerificationError, "release artifact must not be a symlink: #{path}" if File.symlink?(path)
         raise VerificationError, "release artifact is not a regular file: #{path}" unless File.file?(path)
 
         actual_digest = digest(path)
-        return if actual_digest == expected_digest
+        unless actual_digest == expected_digest
+          raise VerificationError, "SHA-256 mismatch for #{path}: expected #{expected_digest}, got #{actual_digest}"
+        end
 
-        raise VerificationError, "SHA-256 mismatch for #{path}: expected #{expected_digest}, got #{actual_digest}"
+        Package.new(path, target).verify!
       end
 
       def digest(path)
@@ -182,6 +187,86 @@ module Svgpng
           end
         end
         result.hexdigest
+      end
+    end
+
+    # Inspects gem metadata and unpacked paths without installing the package.
+    class Package
+      def initialize(path, target)
+        @path = path
+        @target = target
+      end
+
+      def verify!
+        package = Gem::Package.new(@path)
+        validate_gemspec(package.spec)
+        contents = package.contents
+        validate_contents(contents)
+        verify_payload(package)
+      rescue Gem::Package::Error, Gem::Security::Exception, Zlib::Error => e
+        raise VerificationError, "invalid gem package #{@path}: #{e.message}"
+      end
+
+      private
+
+      def validate_gemspec(spec)
+        platform = @target == "ruby" ? "ruby" : @target
+        unless spec.name == "svgpng" && spec.version.to_s == VERSION && spec.platform.to_s == platform
+          raise VerificationError, "#{@path}: gem metadata must be svgpng #{VERSION} for #{platform}"
+        end
+        return if spec.extensions.empty? && spec.executables.empty?
+
+        raise VerificationError, "#{@path}: gem must not declare extensions or executables"
+      end
+
+      def validate_contents(contents)
+        contents.each { |entry| validate_entry(entry) }
+        libraries = contents.select { |entry| shared_library?(entry) }
+        validate_shared_libraries(libraries)
+      end
+
+      def validate_entry(entry)
+        if entry.start_with?("/") || entry.split("/").include?("..") || entry.include?(92.chr)
+          raise VerificationError, "#{@path}: unsafe package path #{entry.inspect}"
+        end
+        return unless entry.start_with?("bin/") || entry.match?(/\.(?:sh|bat|ps1)\z/i)
+
+        raise VerificationError, "#{@path}: packaged scripts are not allowed (#{entry})"
+      end
+
+      def validate_shared_libraries(libraries)
+        if @target == "ruby" && !libraries.empty?
+          raise VerificationError, "#{@path}: ruby shell gem must not contain shared libraries"
+        end
+        return if @target == "ruby" || libraries == [shared_library_path]
+
+        raise VerificationError,
+              "#{@path}: expected exactly #{shared_library_path}; found shared libraries: #{libraries.join(", ")}"
+      end
+
+      def verify_payload(package)
+        return if @target == "ruby"
+
+        Dir.mktmpdir("svgpng-gem-inspect-") do |destination|
+          package.extract_files(destination)
+          extracted = File.join(destination, shared_library_path)
+          unless File.file?(extracted) && !File.symlink?(extracted)
+            raise VerificationError, "#{@path}: expected packaged shared library #{shared_library_path}"
+          end
+        end
+      end
+
+      def shared_library?(entry)
+        entry.match?(/\.(?:so|dylib|dll)\z/)
+      end
+
+      def shared_library_path
+        extension = case @target
+                    when /darwin/ then "dylib"
+                    when /mingw/ then "dll"
+                    else "so"
+                    end
+        "lib/svgpng/native/#{@target}/svgpng.#{extension}"
       end
     end
   end
