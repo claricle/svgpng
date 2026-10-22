@@ -1,6 +1,6 @@
 # SVG-to-PNG rendering contract
 
-**Status: contract accepted for implementation; implementation and delivery gates pending.** This decision fixes the public behavior and proposed ownership for the renderer. The current repository is only a Ruby API shell. No native shim, resvg fork, platform package, golden corpus, native render, or cross-platform byte-identity result is present. The proposed native paths below describe ownership to implement; they are not claims that those files or source pins already exist.
+**Status: contract accepted for implementation; native delivery gates pending.** This decision fixes the public behavior and proposed ownership for the renderer. The current repository supplies a Ruby shell, exact profile resolution, standalone input guards, a checked C RGBA conversion core, and a staged release-set verifier. No complete native shim, resvg fork, platform package, golden corpus, native render, or cross-platform byte-identity result is present. Proposed components below remain requirements until backed by implementation evidence.
 
 ## Public Ruby boundary
 
@@ -292,7 +292,23 @@ compatibility change; before 1.0, a byte change requires a minor version bump
 and changelog entry, and from 1.0 it requires a major version bump (working
 rule pending confirmation).
 
-Current verification state: only Ruby shell presence/status is established by
-the scaffold. Profile execution, native compilation, encoder behavior, package
-resolution, clean-target renders, staged artifact checksums, golden parity,
-publication, and all seven support gates remain pending.
+Current verification state: focused examples exercise the Ruby shell, exact
+profiles, standalone input guards, C pixel conversion, and release-set verifier.
+The shell builds, installs, and loads with an empty executable search path; its
+render call raises the documented unsupported-platform error. The release-set
+specs use synthetic bytes to exercise verification, not real native packages.
+Native renderer compilation, PNG encoder behavior, native package resolution,
+clean-target renders, real staged artifact checksums, golden parity, publication,
+and all seven support gates remain pending.
+
+### Initial Ruby preflight representation
+
+The Ruby raw-input guard currently accepts UTF-8 XML bytes (including an optional
+UTF-8 BOM); invalid UTF-8 and NUL-bearing encodings raise `InputError` before parsing.
+The native parser and URI/CSS policy remain pending and are not replaced by this guard.
+Other XML encodings are a current guard limitation, not a finalized restriction
+on the byte-oriented render contract.
+Intrinsic numeric tokens are bounded to 1024 bytes and an absolute decimal exponent
+of 4096 before rational construction (`LimitError`); values overflowing finite IEEE
+754 magnitude are invalid (`ProfileError`). Positive underflow remains exact for
+rounding and the one-pixel clamp. These limits prevent unbounded big-integer parsing.
