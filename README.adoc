@@ -1,0 +1,13 @@
+= Svgpng
+
+Svgpng renders SVG to PNG, with byte-identical output on every supported
+platform.
+
+It wraps the resvg renderer, pinned to one release and shipped prebuilt for
+each platform, so nothing compiles at install time. System fonts are never
+read: fonts come only from the caller, so the same SVG and the same fonts
+always give the same PNG bytes.
+
+== Status
+
+Under development.
