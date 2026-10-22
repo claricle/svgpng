@@ -28,9 +28,8 @@ RSpec.describe Svgpng::Native do
     allow(described_class).to receive(:packaged_library_path).and_return(library_path)
   end
 
-  it "does not open a shared library while requiring the API and binding" do
+  it "loads independently without opening a shared library" do
     script = <<~RUBY
-      require "svgpng"
       require "fiddle"
       class << Fiddle::Handle
         def new(*)

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "errors"
+require_relative "render_profile"
 require "fiddle"
 require "fiddle/struct"
 
