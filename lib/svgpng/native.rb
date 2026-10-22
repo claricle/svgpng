@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "fiddle"
+require "fiddle/struct"
 
 module Svgpng
   # Opens only the artifact belonging to this installed gem, on explicit request.
@@ -39,12 +40,22 @@ module Svgpng
     private_class_method :compatible_target
 
     # This binding is a pixel conversion primitive, not a rendering backend.
+    # Keep the two ownership-related ABI primitives and their guards in one binding.
+    # rubocop:disable-next Metrics/ClassLength
     class Library
       SIZE_MAX = (1 << (Fiddle::SIZEOF_SIZE_T * 8)) - 1
+      POINTER_MAX = (1 << (Fiddle::SIZEOF_VOIDP * 8)) - 1
       STATUS_ERRORS = { 1 => InputError, 2 => LimitError, 3 => LimitError,
                         4 => InputError, 5 => InputError }.freeze
       STATUS_NAMES = { 1 => "invalid argument", 2 => "arithmetic overflow", 3 => "limit exceeded",
                        4 => "buffer too small", 5 => "overlapping buffers" }.freeze
+      PNG_OUTPUT = Fiddle::CStructBuilder.create(Fiddle::CStruct, [Fiddle::TYPE_VOIDP, Fiddle::TYPE_SIZE_T],
+                                                 %w[bytes length])
+      PNG_STATUS_ERRORS = { 1 => InputError, 2 => LimitError, 3 => LimitError, 4 => InputError,
+                            5 => EncodingError, 6 => EncodingError, 7 => NativeError }.freeze
+      PNG_STATUS_NAMES = { 1 => "invalid argument", 2 => "arithmetic overflow", 3 => "limit exceeded",
+                           4 => "buffer too small", 5 => "allocation failed", 6 => "encoding failed",
+                           7 => "dependency version mismatch" }.freeze
 
       def initialize
         path = Native.send(:packaged_library_path)
@@ -65,7 +76,66 @@ module Svgpng
         convert(source, width, height, source_stride, destination_stride, source_bytes, destination_bytes)
       end
 
+      def encode_rgba(source, width:, height:, source_stride: nil)
+        source_stride = width.is_a?(Integer) ? width * 4 : nil if source_stride.nil?
+        source_bytes = validate_buffers(source, width, height, source_stride, source_stride).first
+        encode_png(source, source_bytes, source_stride, width, height)
+      end
+
       private
+
+      def encoder_functions
+        @encoder_functions ||= begin
+          arguments = [Fiddle::TYPE_VOIDP, Fiddle::TYPE_SIZE_T, Fiddle::TYPE_SIZE_T,
+                       Fiddle::TYPE_SIZE_T, Fiddle::TYPE_SIZE_T, Fiddle::TYPE_VOIDP]
+          encode = Fiddle::Function.new(@handle["svgpng_v1_png_encode"], arguments, Fiddle::TYPE_INT)
+          release = Fiddle::Function.new(@handle["svgpng_v1_png_free"], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOID)
+          [encode, release].freeze
+        end
+      rescue Fiddle::DLError => e
+        raise NativeError, "Cannot load packaged SVGPNG encoder ABI: #{e.message}"
+      end
+
+      # Keep shim release ahead of both Ruby buffer releases on every exit path.
+      # rubocop:disable-next Metrics/MethodLength, Metrics/AbcSize
+      def encode_png(source, source_bytes, source_stride, width, height)
+        encode, release = encoder_functions
+        output = PNG_OUTPUT.malloc(Fiddle::RUBY_FREE)
+        output.bytes = 0
+        output.length = 0
+        input = Fiddle::Pointer.malloc(source_bytes, Fiddle::RUBY_FREE)
+        input[0, source_bytes] = source.byteslice(0, source_bytes)
+        status = encode.call(input, source_bytes, source_stride, width, height, output.to_ptr)
+        check_png_status(status)
+        copy_png(output)
+      ensure
+        begin
+          release.call(output.to_ptr) if output
+        ensure
+          output&.to_ptr&.call_free
+          input&.call_free
+        end
+      end
+
+      def check_png_status(status)
+        return if status.zero?
+
+        message = PNG_STATUS_NAMES.fetch(status, "unknown status #{status}")
+        raise PNG_STATUS_ERRORS.fetch(status, NativeError), "SVGPNG PNG encoding: #{message}"
+      end
+
+      def copy_png(output)
+        length = output.length
+        raise NativeError, "PNG encoder returned an empty output" unless length.positive?
+        raise LimitError, "PNG encoder output exceeds limits" if length > RenderProfile::MAX_BUFFER_BYTES
+
+        address = output.bytes.to_i
+        if !address.positive? || address > POINTER_MAX - length
+          raise NativeError, "PNG encoder returned an invalid output pointer"
+        end
+
+        Fiddle::Pointer.new(address)[0, length].b
+      end
 
       def check_packaged_file(path)
         unless File.file?(path) && !File.symlink?(path) && File.realpath(path) == path

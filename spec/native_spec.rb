@@ -188,4 +188,117 @@ RSpec.describe Svgpng::Native do
     expect(pointers.size).to eq(2)
     expect(pointers).to all(be_freed)
   end
+
+  it "loads RGBA-only libraries and reports the absent encoder ABI only when encoding" do
+    expect(library.rgba_to_straight("1234", width: 1, height: 1)).to be_a(String)
+    expect { library.encode_rgba("1234", width: 1, height: 1) }.to raise_error(Svgpng::NativeError, /encoder ABI/)
+  end
+
+  context "with an encoder ABI ownership fixture, without the real PNG dependencies" do
+    before(:context) do
+      fixture = File.join(@directory, "encoder_fixture.c")
+      @encoder_path = File.join(@directory, "encoder_fixture.#{RbConfig::CONFIG["DLEXT"]}")
+      File.write(fixture, <<~C)
+        #include "encoder.h"
+        #include <stdlib.h>
+        #include <string.h>
+        static int mode = 0;
+        static int releases = 0;
+        void fixture_mode(int value) { mode = value; releases = 0; }
+        int fixture_releases(void) { return releases; }
+        svgpng_v1_png_status svgpng_v1_png_encode(const uint8_t *source, size_t source_length,
+            size_t source_stride, size_t width, size_t height, svgpng_v1_png_output *output) {
+          if (!source || source_length < source_stride * height || width == 0 || height == 0 ||
+              output->bytes != NULL || output->length != 0) return SVGPNG_V1_PNG_INVALID_ARGUMENT;
+          output->bytes = malloc(4);
+          if (!output->bytes) return SVGPNG_V1_PNG_ALLOCATION_FAILED;
+          memcpy(output->bytes, "PNG!", 4);
+          output->length = 4;
+          if (mode == 10) { free(output->bytes); output->bytes = NULL; }
+          if (mode == 11) output->length = 0;
+          if (mode == 12) output->length = 268435457;
+          if (mode == 13) { free(output->bytes); output->bytes = (uint8_t *)UINTPTR_MAX; }
+          return (svgpng_v1_png_status)(mode >= 10 && mode <= 13 ? 0 : mode);
+        }
+        void svgpng_v1_png_free(svgpng_v1_png_output *output) {
+          releases++;
+          if (output && output->bytes != (uint8_t *)UINTPTR_MAX) free(output->bytes);
+          if (output) { output->bytes = NULL; output->length = 0; }
+        }
+      C
+      native = File.expand_path("../native/svgpng_shim", __dir__)
+      shared_flag = RUBY_PLATFORM.include?("darwin") ? "-dynamiclib" : "-shared"
+      output, status = Open3.capture2e("cc", shared_flag, "-fPIC", "-Wall", "-Wextra", "-Werror",
+                                       "-I", native, File.join(native, "rgba.c"), fixture, "-o", @encoder_path)
+      raise "Encoder ABI fixture compilation failed: #{output}" unless status.success?
+    end
+
+    let(:library_path) { @encoder_path }
+    let(:fixture_handle) { Fiddle::Handle.new(@encoder_path) }
+    let(:set_mode) { Fiddle::Function.new(fixture_handle["fixture_mode"], [Fiddle::TYPE_INT], Fiddle::TYPE_VOID) }
+    let(:releases) { Fiddle::Function.new(fixture_handle["fixture_releases"], [], Fiddle::TYPE_INT) }
+
+    before { set_mode.call(0) }
+
+    it "copies shim-owned output before releasing it and preserves source including row padding" do
+      source = "1234xx5678yy".b.freeze
+      result = library.encode_rgba(source, width: 1, height: 2, source_stride: 6)
+      expect(result).to eq("PNG!")
+      expect(result.encoding).to eq(Encoding::BINARY)
+      expect(releases.call).to eq(1)
+      expect(source).to eq("1234xx5678yy")
+      result.setbyte(0, 0)
+      expect(library.encode_rgba("1234", width: 1, height: 1)).to eq("PNG!")
+      expect(releases.call).to eq(2)
+    end
+
+    it "maps native encoder errors and releases output even when the fixture violates error ownership" do
+      { 1 => Svgpng::InputError, 2 => Svgpng::LimitError, 3 => Svgpng::LimitError,
+        4 => Svgpng::InputError, 5 => Svgpng::EncodingError, 6 => Svgpng::EncodingError,
+        7 => Svgpng::NativeError, 99 => Svgpng::NativeError }.each do |status, error|
+        set_mode.call(status)
+        expect { library.encode_rgba("1234", width: 1, height: 1) }.to raise_error(error)
+        expect(releases.call).to eq(1)
+      end
+    end
+
+    it "rejects null, empty, oversized, and overflowing outputs before copying and still releases them" do
+      { 10 => Svgpng::NativeError, 11 => Svgpng::NativeError,
+        12 => Svgpng::LimitError, 13 => Svgpng::NativeError }.each do |mode, error|
+        set_mode.call(mode)
+        expect { library.encode_rgba("1234", width: 1, height: 1) }.to raise_error(error)
+        expect(releases.call).to eq(1)
+      end
+    end
+
+    it "validates encoder input before allocating or calling the shim" do
+      expect(Fiddle::Pointer).not_to receive(:malloc)
+      expect { library.encode_rgba("123", width: 1, height: 1) }.to raise_error(Svgpng::InputError)
+      expect { library.encode_rgba("1234", width: 1, height: 1, source_stride: false) }.to raise_error(Svgpng::InputError)
+      expect { library.encode_rgba("", width: 32_769, height: 1) }.to raise_error(Svgpng::LimitError)
+      expect(releases.call).to eq(0)
+    end
+
+    it "releases shim output before the Ruby struct and input buffers on a copy failure" do
+      pointers = []
+      output = nil
+      allow(described_class::Library::PNG_OUTPUT).to receive(:malloc).and_wrap_original do |method, *args|
+        output = method.call(*args)
+      end
+      allow(Fiddle::Pointer).to receive(:malloc).and_wrap_original do |method, *args|
+        method.call(*args).tap { |pointer| pointers << pointer }
+      end
+      release = library.send(:encoder_functions).last
+      allow(release).to receive(:call).and_wrap_original do |method, *args|
+        expect(output.to_ptr).not_to be_freed
+        expect(pointers).to all(satisfy { |pointer| !pointer.freed? })
+        method.call(*args)
+      end
+      allow(library).to receive(:copy_png).and_raise(Svgpng::NativeError, "copy failed")
+      expect { library.encode_rgba("1234", width: 1, height: 1) }.to raise_error(Svgpng::NativeError, /copy failed/)
+      expect(releases.call).to eq(1)
+      expect(output.to_ptr).to be_freed
+      expect(pointers.last).to be_freed
+    end
+  end
 end
