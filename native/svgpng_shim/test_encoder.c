@@ -13,6 +13,8 @@
 static size_t allocation_attempts;
 static size_t fail_at = SIZE_MAX;
 static size_t outstanding_allocations;
+static int fail_growth_realloc;
+static size_t growth_realloc_failures;
 
 static void *test_malloc(size_t bytes)
 {
@@ -45,6 +47,10 @@ static void *test_realloc(void *old, size_t bytes)
     int creates_allocation = old == NULL;
     void *pointer;
     if (allocation_attempts++ == fail_at) {
+        return NULL;
+    }
+    if (!creates_allocation && fail_growth_realloc) {
+        growth_realloc_failures++;
         return NULL;
     }
     pointer = realloc(old, bytes);
@@ -264,6 +270,43 @@ static void test_output_bounds(void)
     free(state);
     assert(outstanding_allocations == 0);
 }
+
+static void test_output_growth_failure(void)
+{
+    const size_t width = 256, height = 64, length = width * height * 4;
+    uint8_t *source = malloc(length), *snapshot = malloc(length);
+    uint32_t random = 0x12345678;
+    svgpng_v1_png_output output = { NULL, 0 };
+
+    assert(source != NULL && snapshot != NULL);
+    for (size_t i = 0; i < length; i++) {
+        random ^= random << 13;
+        random ^= random >> 17;
+        random ^= random << 5;
+        source[i] = (uint8_t)random;
+    }
+    memcpy(snapshot, source, length);
+    growth_realloc_failures = 0;
+    fail_growth_realloc = 1;
+    assert(svgpng_v1_png_encode(source, length, width * 4, width, height,
+        &output) == SVGPNG_V1_PNG_ALLOCATION_FAILED);
+    /* The fault triggers only for a non-NULL old allocation: this proves
+     * cleanup released an existing output buffer after realloc failed. */
+    assert(growth_realloc_failures == 1);
+    assert(output.bytes == NULL && output.length == 0);
+    assert(outstanding_allocations == 0);
+    assert(memcmp(source, snapshot, length) == 0);
+
+    fail_growth_realloc = 0;
+    assert(svgpng_v1_png_encode(source, length, width * 4, width, height,
+        &output) == SVGPNG_V1_PNG_OK);
+    assert_png(&output, source, width * 4, width, height, 1);
+    assert(memcmp(source, snapshot, length) == 0);
+    svgpng_v1_png_free(&output);
+    assert(outstanding_allocations == 0);
+    free(snapshot);
+    free(source);
+}
 #endif
 
 int main(void)
@@ -274,6 +317,7 @@ int main(void)
 #ifdef SVGPNG_ENCODER_FAULT_TEST
     test_allocation_failure_cleanup();
     test_output_bounds();
+    test_output_growth_failure();
     assert(outstanding_allocations == 0);
 #endif
     puts("PNG encoder assertions passed");
