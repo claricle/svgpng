@@ -125,7 +125,7 @@ module SvgpngLocalPackage
   end
 
   def stage_package_files(repository, stage, artifact)
-    %w[lib docs].each { |directory| FileUtils.cp_r(File.join(repository, directory), stage) }
+    %w[lib docs vendor].each { |directory| FileUtils.cp_r(File.join(repository, directory), stage) }
     FileUtils.cp(File.join(repository, "README.adoc"), stage)
     library = File.join(stage, LIBRARY_RELATIVE_PATH)
     FileUtils.mkdir_p(File.dirname(library))
