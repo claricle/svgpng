@@ -114,7 +114,7 @@ module Svgpng
       # rubocop:disable-next Metrics/AbcSize, Metrics/MethodLength
       def render_fonts(inputs, owned)
         faces = inputs.fonts.flat_map { |family, entries| entries.map { |face| [face, family, Library::SIZE_MAX] } }
-        faces.concat(inputs.fallback_fonts.each_with_index.map { |face, order| [face, "", order] })
+        faces.concat(inputs.fallback_fonts.each_with_index.map { |face, order| [face, face.family || "", order] })
         pointer = own_buffer(FONT.size * faces.length, owned)
         faces.each_with_index do |(face, family, order), index|
           entry = FONT.new(pointer + (index * FONT.size))

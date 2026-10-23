@@ -18,6 +18,10 @@ constructed as `Svgpng::FontFace.new(bytes:, source_id:)`; its bytes are
 immutable after construction and `source_id` is caller-provided diagnostic
 text. Family names, style, weight, stretch, and glyph coverage are derived from
 OpenType metadata in the bytes. Caller declarations cannot override metadata.
+For fallback faces, the optional `family:` keyword asserts a family spelling
+against the supplied font's metadata; a mismatch raises `FontMetadataError`.
+Omitting it lets the renderer derive the fallback family from metadata.
+The assertion does not change fallback order, source IDs, or manifest identity.
 There is no resource map, base path, directory, filesystem loader, network
 loader, or other external-resource injection API.
 

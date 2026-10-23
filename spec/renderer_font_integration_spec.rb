@@ -30,6 +30,19 @@ if ENV["SVGPNG_TEST_NATIVE_LIBRARY"]
       expect(result.warnings).to eq([])
     end
 
+    it "validates an explicit fallback family against parsed metadata without changing selection diagnostics" do
+      matched = Svgpng::FontFace.new(bytes: regular.bytes, source_id: regular.source_id, family: "Noto Sans")
+      mismatched = Svgpng::FontFace.new(bytes: regular.bytes, source_id: regular.source_id, family: "Absent")
+      expected = render_text("A", family: "Absent", fallback_fonts: [regular])
+      result = render_text("A", family: "Absent", fallback_fonts: [matched])
+      expect(result.png_bytes).to eq(expected.png_bytes)
+      expect(result.font_manifest).to eq(expected.font_manifest)
+      expect(result.warnings.map { |warning| warning_fields(warning) })
+        .to eq(expected.warnings.map { |warning| warning_fields(warning) })
+      expect { render_text("A", family: "Absent", fallback_fonts: [mismatched]) }
+        .to raise_error(Svgpng::FontMetadataError)
+    end
+
     it "selects the requested weight using supplied face metadata" do
       exact = render_text("A", weight: 700, fonts: { "Noto Sans" => [regular, bold] })
       fallback = render_text("A", family: "Absent", weight: 700, fallback_fonts: [regular, bold])
