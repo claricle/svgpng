@@ -33,6 +33,57 @@ static void test_pixels_and_rows(void)
     }
 }
 
+static void assert_nearest_channel(uint8_t channel, uint8_t alpha, uint8_t result)
+{
+    if (alpha == 0) {
+        assert(result == 0);
+    } else if (channel >= alpha) {
+        assert(result == 255);
+    } else {
+        /* Reconstruct the premultiplied value: nearest rounding has at most
+         * half an alpha unit of error, with exact ties rounded upward. This
+         * characterizes the answer without repeating the conversion formula. */
+        int32_t error = (int32_t)result * alpha - (int32_t)channel * 255;
+        assert(-(int32_t)alpha < 2 * error);
+        assert(2 * error <= (int32_t)alpha);
+    }
+}
+
+static void test_all_channel_alpha_pairs(void)
+{
+    enum { ROW_BYTES = 256 * 4 };
+    uint8_t source[ROW_BYTES + 2], original[ROW_BYTES + 2];
+    uint8_t destination[ROW_BYTES + 2];
+
+    for (unsigned int alpha = 0; alpha < 256; alpha++) {
+        memset(source, 0xa5, sizeof(source));
+        memset(destination, 0xcc, sizeof(destination));
+        for (unsigned int channel = 0; channel < 256; channel++) {
+            size_t offset = 1 + channel * 4;
+            source[offset] = (uint8_t)channel;
+            source[offset + 1] = (uint8_t)(255 - channel);
+            /* Multiplication by an odd number permutes all byte values. */
+            source[offset + 2] = (uint8_t)(channel * 73);
+            source[offset + 3] = (uint8_t)alpha;
+        }
+        memcpy(original, source, sizeof(source));
+
+        assert(svgpng_v1_rgba_to_straight(source + 1, ROW_BYTES, ROW_BYTES,
+            destination + 1, ROW_BYTES, ROW_BYTES, 256, 1) == SVGPNG_V1_RGBA_OK);
+        for (unsigned int channel = 0; channel < 256; channel++) {
+            size_t offset = 1 + channel * 4;
+            for (size_t component = 0; component < 3; component++) {
+                assert_nearest_channel(source[offset + component],
+                    (uint8_t)alpha, destination[offset + component]);
+            }
+            assert(destination[offset + 3] == alpha);
+        }
+        assert(memcmp(source, original, sizeof(source)) == 0);
+        assert(destination[0] == 0xcc);
+        assert(destination[ROW_BYTES + 1] == 0xcc);
+    }
+}
+
 static void test_errors_leave_buffers_untouched(void)
 {
     uint8_t source[34], destination[34], source_before[34], destination_before[34];
@@ -86,6 +137,7 @@ static void test_adjacent_buffers(void)
 int main(void)
 {
     test_pixels_and_rows();
+    test_all_channel_alpha_pairs();
     test_errors_leave_buffers_untouched();
     test_adjacent_buffers();
     puts("RGBA conversion assertions passed");
