@@ -190,10 +190,12 @@ differs:
   frees, status mapping, font-byte loading/resolver callback, render buffer,
   unpremultiplication, and PNG encoding. Ruby never frees memory allocated by
   a different allocator.
-* A Claricle-maintained resvg fork is based on upstream **v0.48.1** and contains
-  only the reviewable font-selection/diagnostic hook and parser-side rejection
-  of forbidden references. The upstream C API alone is not assumed to enforce
-  this contract.
+* The intended Claricle-maintained resvg fork is based on upstream **v0.48.1**
+  and contains only the reviewable font-selection/diagnostic hook and
+  parser-side rejection of forbidden references. The upstream release archive
+  is now staged and checksum-verified as recorded in `vendor/manifest.yml`;
+  the custom fork, patch set, and their license closure are still pending. The
+  upstream C API alone is not assumed to enforce this contract.
 * The shim statically links the fork, **libpng 1.6.59**, and **zlib 1.3.2**.
   The packaged shared library is the dependency closure; neither Fiddle nor the
   dynamic loader may resolve ambient copies of these libraries.
@@ -201,11 +203,12 @@ differs:
   `lib/svgpng/renderer.rb` coordinates Ruby input validation and native calls.
   Do not compile at gem install time, add a compiled Ruby extension, shell out,
   or search system library paths.
-* `vendor/manifest.yml` records source URLs, exact resvg fork commit and upstream
-  base, patch digests, source checksums, versions, licences, Rust/C toolchains,
-  linker/build flags, binary checksums, and artifact sizes. These values must
-  be measured and committed during native implementation. This document does
-  not invent a fork commit, source hash, toolchain identifier, or patch digest.
+* `vendor/manifest.yml` records verified source provenance as it becomes
+  available. The upstream archive and upstream base commit are pinned there;
+  the exact fork commit, patch digests, complete source/license closure,
+  toolchains, linker/build flags, binary checksums, and artifact sizes remain
+  unset until measured during native implementation. This document does not
+  invent a fork commit, source hash, toolchain identifier, or patch digest.
 
 The initial package set is seven native gems and one shell gem, all at the same
 version, initially **0.1.0**:

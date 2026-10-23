@@ -1,0 +1,38 @@
+schema_version: 1
+status: upstream_source_verified_custom_fork_pending
+sources:
+  resvg:
+    project: https://github.com/linebender/resvg
+    version: 0.48.1
+    tag: v0.48.1
+    tag_url: https://github.com/linebender/resvg/tree/v0.48.1
+    upstream_commit: 68b14c4c3bccdb60344c777406486b54c36ec1a4
+    archive:
+      filename: resvg-0.48.1.tar.xz
+      url: https://github.com/linebender/resvg/releases/download/v0.48.1/resvg-0.48.1.tar.xz
+      api_asset: https://api.github.com/repos/linebender/resvg/releases/assets/498966792
+      size_bytes: 13023916
+      sha256: 13ed5a2bae7a01156288ecae5bf944cf7d1c572742c19fc68027947a4d87294c
+      extracted_root: resvg-0.48.1
+      path_validation: no_absolute_or_parent_traversal_entries
+    declared_license: Apache-2.0 OR MIT
+    license_files:
+      - LICENSE-APACHE
+      - LICENSE-MIT
+  claricle_fork:
+    status: not_created_or_verified
+    upstream_base: 68b14c4c3bccdb60344c777406486b54c36ec1a4
+    commit: null
+    patches: null
+    source_sha256: null
+    license_closure: pending_dependency_and_patch_audit
+  libpng:
+    status: pending
+  zlib:
+    status: pending
+build:
+  rust_toolchain: null
+  c_toolchain: null
+  linker_flags: null
+  binary_checksums: null
+  artifact_sizes: null
