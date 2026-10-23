@@ -18,7 +18,7 @@ make_face = lambda do |filename|
 end
 fonts = request.fetch("fonts", {}).transform_values { |files| files.map { |file| make_face.call(file) } }
 fallback = request.fetch("fallback_fonts", []).map { |file| make_face.call(file) }
-begin
+render = lambda do
   result = Svgpng.render(File.binread(File.join(root, request.fetch("svg"))),
                          profile: request.fetch("profile").transform_keys(&:to_sym),
                          fonts: fonts, fallback_fonts: fallback)
@@ -27,11 +27,25 @@ begin
       [field, warning.public_send(field)]
     end
   end
-  puts JSON.generate(png: [result.png_bytes].pack("m0"), width: result.width,
-                     height: result.height, warnings: warnings, font_manifest: result.font_manifest)
+  { png: [result.png_bytes].pack("m0"), width: result.width,
+    height: result.height, warnings: warnings, font_manifest: result.font_manifest }
 rescue Svgpng::Error => e
   details = %i[requested_family scalars reference_class location].filter_map do |field|
     [field, e.public_send(field)] if e.respond_to?(field)
   end.to_h
-  puts JSON.generate(error: e.class.name, details: details)
+  { error: e.class.name, details: details }
+end
+
+if request["concurrency"]
+  gate = Queue.new
+  threads = Array.new(request.fetch("concurrency")) do
+    Thread.new do
+      gate.pop
+      render.call
+    end
+  end
+  threads.length.times { gate << true }
+  puts JSON.generate(threads.map(&:value))
+else
+  puts JSON.generate(render.call)
 end

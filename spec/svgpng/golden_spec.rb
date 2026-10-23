@@ -36,4 +36,17 @@ RSpec.describe "committed renderer goldens" do
       expect((0...first.fetch("height")).map { |row| rows.getbyte(row * stride) }.uniq).to eq([0])
     end
   end
+
+  it "preserves golden bytes and diagnostics during concurrent renders" do
+    if !ENV["SVGPNG_TEST_NATIVE_LIBRARY"] && ENV["SVGPNG_REQUIRE_GOLDENS"] != "1"
+      skip "set SVGPNG_TEST_NATIVE_LIBRARY for real-artifact golden verification"
+    end
+    manifest.fetch("fixtures").each do |entry|
+      results = GoldenCorpus.run(entry.merge("concurrency" => 4))
+      expect(results.length).to eq(4)
+      expected = entry.fetch("expected").dup
+      expected["png"] = [File.binread(File.join(GoldenCorpus::ROOT, entry.fetch("png")))].pack("m0") if entry["png"]
+      expect(results).to all(eq(expected)), entry.fetch("svg")
+    end
+  end
 end
