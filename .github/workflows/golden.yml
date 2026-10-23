@@ -41,6 +41,7 @@ jobs:
         if: runner.os == 'Windows'
         with:
           msystem: UCRT64
+          location: ${{ runner.temp }}/svgpng-msys2
           path-type: inherit
           install: >-
             mingw-w64-ucrt-x86_64-gcc
