@@ -20,6 +20,10 @@ jobs:
   qualify:
     runs-on: ${{ inputs.runner }}
     steps:
+      - name: Preserve exact source bytes on Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: ruby/setup-ruby@v1
         if: ${{ !inputs.musl }}
