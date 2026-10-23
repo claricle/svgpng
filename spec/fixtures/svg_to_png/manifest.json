@@ -95,6 +95,12 @@
       "sha256": "84cda635b5395e22f428c5802b6c36eaeec66750c8b387279424a48545ac1d74",
       "license": "SIL-OFL-1.1",
       "license_file": "Noto-LICENSE-OFL.txt"
+    },
+    {
+      "file": "NotoSans-Italic.ttf",
+      "sha256": "35600501daadd3e9030ee6ed8098fd3c7f31bfd898ca58da8edf793a3231c48b",
+      "license": "SIL-OFL-1.1",
+      "license_file": "Noto-LICENSE-OFL.txt"
     }
   ],
   "fixtures": [
@@ -397,6 +403,171 @@
       "expected": {
         "error": "Svgpng::ProfileError",
         "details": {}
+      }
+    },
+    {
+      "svg": "italic.svg",
+      "png": "italic.png",
+      "fonts": {
+        "Noto Sans": [
+          "NotoSans-Regular.ttf",
+          "NotoSans-Italic.ttf"
+        ]
+      },
+      "profile": {},
+      "svg_sha256": "ee882af95dfdfe9a0aba97d5fb65f937608146bba2895c7514058de96d1c87a5",
+      "png_sha256": "94f61187029a3a5ea92075d9989939a8afb9a6a90b2db70c9bcc484c57c4d2ce",
+      "expected": {
+        "width": 120,
+        "height": 40,
+        "warnings": [],
+        "font_manifest": [
+          {
+            "face_index": 0,
+            "family": "noto sans",
+            "sha256": "35600501daadd3e9030ee6ed8098fd3c7f31bfd898ca58da8edf793a3231c48b",
+            "source_id": "NotoSans-Italic.ttf",
+            "stretch": "normal",
+            "style": "italic",
+            "weight": 400
+          }
+        ]
+      }
+    },
+    {
+      "svg": "caller-order.svg",
+      "png": "caller-order-sans.png",
+      "fallback_fonts": [
+        "NotoSans-Regular.ttf",
+        "NotoSansDevanagari-Regular.ttf"
+      ],
+      "profile": {},
+      "svg_sha256": "40675ec831f5917b36bd47329e49710fd032cdea9eed5920afe63fc0be3a0007",
+      "png_sha256": "c954b03ba75b3ad2584b8a34fdf14c592907442177c6092f4de6c86f042740cd",
+      "expected": {
+        "width": 120,
+        "height": 40,
+        "warnings": [
+          {
+            "requested_family": "Absent",
+            "selected_family": "noto sans",
+            "style": "normal",
+            "weight": 400,
+            "stretch": "normal",
+            "scalars": [
+              65
+            ]
+          }
+        ],
+        "font_manifest": [
+          {
+            "face_index": 0,
+            "family": "noto sans",
+            "sha256": "6b04c8dd65af6b73eb4279472ed1580b29102d6496a377340e80a40cdb3b22c9",
+            "source_id": "NotoSans-Regular.ttf",
+            "stretch": "normal",
+            "style": "normal",
+            "weight": 400
+          }
+        ]
+      }
+    },
+    {
+      "svg": "caller-order.svg",
+      "png": "caller-order-devanagari.png",
+      "fallback_fonts": [
+        "NotoSansDevanagari-Regular.ttf",
+        "NotoSans-Regular.ttf"
+      ],
+      "profile": {},
+      "svg_sha256": "40675ec831f5917b36bd47329e49710fd032cdea9eed5920afe63fc0be3a0007",
+      "png_sha256": "c954b03ba75b3ad2584b8a34fdf14c592907442177c6092f4de6c86f042740cd",
+      "expected": {
+        "width": 120,
+        "height": 40,
+        "warnings": [
+          {
+            "requested_family": "Absent",
+            "selected_family": "noto sans devanagari",
+            "style": "normal",
+            "weight": 400,
+            "stretch": "normal",
+            "scalars": [
+              65
+            ]
+          }
+        ],
+        "font_manifest": [
+          {
+            "face_index": 0,
+            "family": "noto sans devanagari",
+            "sha256": "84cda635b5395e22f428c5802b6c36eaeec66750c8b387279424a48545ac1d74",
+            "source_id": "NotoSansDevanagari-Regular.ttf",
+            "stretch": "normal",
+            "style": "normal",
+            "weight": 400
+          }
+        ]
+      }
+    },
+    {
+      "svg": "warning-order.svg",
+      "png": "warning-order.png",
+      "fallback_fonts": [
+        "NotoSans-Regular.ttf",
+        "NotoSansDevanagari-Regular.ttf"
+      ],
+      "profile": {},
+      "svg_sha256": "2d910750758e99f57d0b62efa639d69a91108e14b0de307869ec6924f9df92c5",
+      "png_sha256": "1f034ba5b03aa5e901eb3785ba4c696ee0f43c5e3137bb850b9fe41c988b5dab",
+      "expected": {
+        "width": 120,
+        "height": 40,
+        "warnings": [
+          {
+            "requested_family": "Absent",
+            "selected_family": "noto sans devanagari",
+            "style": "normal",
+            "weight": 400,
+            "stretch": "normal",
+            "scalars": [
+              2325,
+              2359,
+              2367,
+              2381
+            ]
+          },
+          {
+            "requested_family": "Absent",
+            "selected_family": "noto sans",
+            "style": "normal",
+            "weight": 400,
+            "stretch": "normal",
+            "scalars": [
+              65
+            ]
+          }
+        ],
+        "font_manifest": [
+          {
+            "face_index": 0,
+            "family": "noto sans",
+            "sha256": "6b04c8dd65af6b73eb4279472ed1580b29102d6496a377340e80a40cdb3b22c9",
+            "source_id": "NotoSans-Regular.ttf",
+            "stretch": "normal",
+            "style": "normal",
+            "weight": 400
+          },
+          {
+            "face_index": 0,
+            "family": "noto sans devanagari",
+            "sha256": "84cda635b5395e22f428c5802b6c36eaeec66750c8b387279424a48545ac1d74",
+            "source_id": "NotoSansDevanagari-Regular.ttf",
+            "stretch": "normal",
+            "style": "normal",
+            "weight": 400
+          }
+        ]
       }
     }
   ]

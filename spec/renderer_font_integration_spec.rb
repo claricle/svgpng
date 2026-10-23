@@ -11,6 +11,7 @@ if ENV["SVGPNG_TEST_NATIVE_LIBRARY"]
 
     let(:font_directory) { File.expand_path("../native/svgpng_renderer/tests/fonts", __dir__) }
     let(:regular) { font_face("NotoSans-Regular.ttf", "noto-regular") }
+    let(:italic) { font_face("NotoSans-Italic.ttf", "noto-italic") }
     let(:bold) { font_face("NotoSans-Bold.ttf", "noto-bold") }
     let(:devanagari) { font_face("NotoSansDevanagari-Regular.ttf", "noto-devanagari") }
     let(:cluster_scalars) { [0x0915, 0x0937, 0x093f, 0x094d] }
@@ -51,6 +52,26 @@ if ENV["SVGPNG_TEST_NATIVE_LIBRARY"]
       expect(fallback.png_bytes).to eq(exact.png_bytes)
       expect(fallback.warnings.map { |warning| warning_fields(warning) })
         .to eq([["Absent", "noto sans", "normal", 700, "normal", [65]]])
+    end
+
+    it "selects italic style for exact and fallback families regardless of input face order" do
+      body = '<text font-family="Noto Sans" font-style="italic" x="2" y="30">A</text>'
+      direct = render_body(body, fonts: { "Noto Sans" => italic })
+      normal = render_body(body.sub('font-style="italic"', 'font-style="normal"'),
+                           fonts: { "Noto Sans" => regular })
+      expected = metadata(italic, family: "noto sans").merge("style" => "italic")
+      expect(direct.png_bytes).not_to eq(normal.png_bytes)
+      expect(direct.font_manifest).to eq([expected])
+      [[regular, italic], [italic, regular]].each do |faces|
+        exact = render_body(body, fonts: { "Noto Sans" => faces })
+        fallback = render_body(body.sub("Noto Sans", "Absent"), fallback_fonts: faces)
+        expect(exact.png_bytes).to eq(direct.png_bytes)
+        expect(fallback.png_bytes).to eq(direct.png_bytes)
+        expect(exact.font_manifest).to eq([expected])
+        expect(fallback.font_manifest).to eq([expected])
+        expect(fallback.warnings.map { |warning| warning_fields(warning) })
+          .to eq([["Absent", "noto sans", "italic", 400, "normal", [65]]])
+      end
     end
 
     it "honors caller fallback family order when both faces cover the cluster" do
