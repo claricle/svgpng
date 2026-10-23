@@ -9,6 +9,7 @@ case "$SVGPNG_TARGET" in
 esac
 export SVGPNG_TEST_NATIVE_LIBRARY="$PWD/candidate/svgpng.$suffix"
 export SVGPNG_REQUIRE_GOLDENS=1
+bundle exec ruby scripts/native/abi.rb "$SVGPNG_TEST_NATIVE_LIBRARY"
 bundle exec rake svgpng:verify_manifest
 bundle exec rspec spec/svgpng/golden_spec.rb
 ruby scripts/native/package.rb "$SVGPNG_TARGET" "$SVGPNG_TEST_NATIVE_LIBRARY" candidate
