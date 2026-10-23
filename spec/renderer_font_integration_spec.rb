@@ -11,6 +11,7 @@ if ENV["SVGPNG_TEST_NATIVE_LIBRARY"]
 
     let(:font_directory) { File.expand_path("../native/svgpng_renderer/tests/fonts", __dir__) }
     let(:regular) { font_face("NotoSans-Regular.ttf", "noto-regular") }
+    let(:condensed) { font_face("NotoSans-Condensed.ttf", "noto-condensed") }
     let(:italic) { font_face("NotoSans-Italic.ttf", "noto-italic") }
     let(:bold) { font_face("NotoSans-Bold.ttf", "noto-bold") }
     let(:devanagari) { font_face("NotoSansDevanagari-Regular.ttf", "noto-devanagari") }
@@ -71,6 +72,26 @@ if ENV["SVGPNG_TEST_NATIVE_LIBRARY"]
         expect(fallback.font_manifest).to eq([expected])
         expect(fallback.warnings.map { |warning| warning_fields(warning) })
           .to eq([["Absent", "noto sans", "italic", 400, "normal", [65]]])
+      end
+    end
+
+    it "selects condensed stretch for exact and fallback families regardless of input face order" do
+      body = '<text font-family="Noto Sans" font-stretch="condensed" x="2" y="30">A</text>'
+      direct = render_body(body, fonts: { "Noto Sans" => condensed })
+      normal = render_body(body.sub('font-stretch="condensed"', 'font-stretch="normal"'),
+                           fonts: { "Noto Sans" => regular })
+      expected = metadata(condensed, family: "noto sans").merge("stretch" => "condensed")
+      expect(direct.png_bytes).not_to eq(normal.png_bytes)
+      expect(direct.font_manifest).to eq([expected])
+      [[regular, condensed], [condensed, regular]].each do |faces|
+        exact = render_body(body, fonts: { "Noto Sans" => faces })
+        fallback = render_body(body.sub("Noto Sans", "Absent"), fallback_fonts: faces)
+        expect(exact.png_bytes).to eq(direct.png_bytes)
+        expect(fallback.png_bytes).to eq(direct.png_bytes)
+        expect(exact.font_manifest).to eq([expected])
+        expect(fallback.font_manifest).to eq([expected])
+        expect(fallback.warnings.map { |warning| warning_fields(warning) })
+          .to eq([["Absent", "noto sans", "normal", 400, "condensed", [65]]])
       end
     end
 

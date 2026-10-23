@@ -101,6 +101,14 @@
       "sha256": "35600501daadd3e9030ee6ed8098fd3c7f31bfd898ca58da8edf793a3231c48b",
       "license": "SIL-OFL-1.1",
       "license_file": "Noto-LICENSE-OFL.txt"
+    },
+    {
+      "file": "NotoSans-Condensed.ttf",
+      "sha256": "5c15b8bb0ac1bbd533917b23968c6f0a420f143533e1293cc575f4f9dd543be8",
+      "license": "SIL-OFL-1.1",
+      "license_file": "NotoSans-Condensed-LICENSE-OFL.txt",
+      "upstream_commit": "ffebf8c1ee449e544955a7e813c54f9b73848eac",
+      "upstream_path": "hinted/ttf/NotoSans/NotoSans-Condensed.ttf"
     }
   ],
   "fixtures": [
@@ -564,6 +572,35 @@
             "sha256": "84cda635b5395e22f428c5802b6c36eaeec66750c8b387279424a48545ac1d74",
             "source_id": "NotoSansDevanagari-Regular.ttf",
             "stretch": "normal",
+            "style": "normal",
+            "weight": 400
+          }
+        ]
+      }
+    },
+    {
+      "svg": "condensed.svg",
+      "png": "condensed.png",
+      "profile": {},
+      "fonts": {
+        "Noto Sans": [
+          "NotoSans-Regular.ttf",
+          "NotoSans-Condensed.ttf"
+        ]
+      },
+      "svg_sha256": "938e6c8c5953c86085c7a51d235658d281ebb1718f40a84b46a640dd331dfe71",
+      "png_sha256": "dbf38dffe71083b98841fdc43afd8550b80ebec1afa237dbcbd894daed948812",
+      "expected": {
+        "width": 120,
+        "height": 40,
+        "warnings": [],
+        "font_manifest": [
+          {
+            "face_index": 0,
+            "family": "noto sans",
+            "sha256": "5c15b8bb0ac1bbd533917b23968c6f0a420f143533e1293cc575f4f9dd543be8",
+            "source_id": "NotoSans-Condensed.ttf",
+            "stretch": "condensed",
             "style": "normal",
             "weight": 400
           }
