@@ -1,59 +1,27 @@
 --- a/crates/resvg/Cargo.toml
 +++ b/crates/resvg/Cargo.toml
-@@ -8,7 +8,7 @@
- description = "An SVG rendering library."
- repository = "https://github.com/linebender/resvg"
- exclude = ["tests"]
+@@ -11 +11 @@
 -workspace = "../.."
 +workspace = "../../.."
- 
- [[bin]]
- name = "resvg"
 --- a/crates/usvg/Cargo.toml
 +++ b/crates/usvg/Cargo.toml
-@@ -11,13 +11,14 @@
- documentation = "https://docs.rs/usvg/"
- readme = "README.md"
- exclude = ["tests"]
+@@ -14 +14 @@
 -workspace = "../.."
 +workspace = "../../.."
- 
- [[bin]]
- name = "usvg"
- required-features = ["svgz", "text", "system-fonts", "memmap-fonts", "writer"]
- 
- [dependencies]
+@@ -20,0 +21 @@
 +cssparser = "=0.35.0"
- base64 = { version = "0.23", optional = true } # for embedded images
- log = "0.4"
- pico-args = { version = "0.5", features = ["eq-separator"] }
 --- a/crates/usvg/src/parser/converter.rs
 +++ b/crates/usvg/src/parser/converter.rs
-@@ -17,7 +17,7 @@
- 
- use super::svgtree::{self, AId, EId, FromValue, SvgNode};
- use super::units::{self, convert_length};
+@@ -20 +20 @@
 -use super::{Error, Options, marker};
 +use super::{marker, Error, Options};
- #[cfg(feature = "text")]
- use crate::flatten::BitmapImage;
- use crate::parser::paint_server::process_paint;
-@@ -521,6 +521,9 @@
- }
- 
- fn resolve_svg_size(svg: &SvgNode, opt: &Options) -> (Result<Size, Error>, bool) {
+@@ -523,0 +524,3 @@
 +    if let Some(size) = opt.intrinsic_size {
 +        return (Ok(size), false);
 +    }
-     let mut state = State {
-         parent_clip_path: None,
-         context_element: None,
 --- a/crates/usvg/src/parser/image.rs
 +++ b/crates/usvg/src/parser/image.rs
-@@ -83,34 +83,7 @@
-     /// Paths have to be absolute or relative to the input SVG file or relative to
-     /// [Options::resources_dir](crate::Options::resources_dir).
-     pub fn default_string_resolver() -> ImageHrefStringResolverFn<'static> {
+@@ -86,28 +86 @@
 -        Box::new(move |href: &str, opts: &Options| {
 -            let path = opts.get_abs_path(std::path::Path::new(href));
 -
@@ -83,23 +51,12 @@
 -            }
 -        })
 +        Box::new(|_, _| None)
-     }
- }
- 
 --- a/crates/usvg/src/parser/mod.rs
 +++ b/crates/usvg/src/parser/mod.rs
-@@ -22,12 +22,25 @@
- pub(crate) use converter::Cache;
- pub use image::{ImageHrefDataResolverFn, ImageHrefResolver, ImageHrefStringResolverFn};
- pub use options::Options;
+@@ -24,0 +25,2 @@
 +pub mod policy;
 +pub use policy::guarded_document;
- #[cfg(feature = "writer")]
- pub(crate) use svgtree::{AId, EId};
- 
- /// List of all errors.
- #[derive(Debug)]
- pub enum Error {
+@@ -30,0 +33,11 @@
 +    /// A reference was rejected before resource resolution.
 +    ForbiddenReference,
 +    /// A forbidden reference with bounded, non-sensitive location metadata.
@@ -111,25 +68,13 @@
 +    MalformedReference,
 +    /// Inline resource recursion or decoded bytes exceed the fixed budget.
 +    ReferenceLimit,
-     /// Only UTF-8 content are supported.
-     NotAnUtf8Str,
- 
-@@ -60,6 +73,11 @@
- impl std::fmt::Display for Error {
-     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-         match *self {
+@@ -62,0 +76,5 @@
 +            Error::ForbiddenReference | Error::ForbiddenReferenceAt { .. } => {
 +                write!(f, "forbidden SVG reference")
 +            }
 +            Error::MalformedReference => write!(f, "malformed SVG reference"),
 +            Error::ReferenceLimit => write!(f, "SVG reference limit exceeded"),
-             Error::NotAnUtf8Str => {
-                 write!(f, "provided data has not an UTF-8 encoding")
-             }
-@@ -144,6 +162,17 @@
-             // Can't clone the resolver, so we create a new one that forwards to it.
-             #[cfg(feature = "text")]
-             font_resolver: crate::FontResolver {
+@@ -146,0 +165,11 @@
 +                cluster_candidates: opt.font_resolver.cluster_candidates.as_ref().map(|f| {
 +                    Box::new(
 +                        move |font: &crate::Font, db: &mut std::sync::Arc<fontdb::Database>| {
@@ -141,13 +86,7 @@
 +                    (opt.font_resolver.cluster_result)(font, text, id)
 +                }),
 +                missing_glyph: Box::new(|c| (opt.font_resolver.missing_glyph)(c)),
-                 select_font: Box::new(|font, db| (opt.font_resolver.select_font)(font, db)),
-                 select_fallback: Box::new(|c, used_fonts, db| {
-                     (opt.font_resolver.select_fallback)(c, used_fonts, db)
-@@ -157,19 +186,17 @@
- 
-     /// Parses `Tree` from an SVG string.
-     pub fn from_str(text: &str, opt: &Options) -> Result<Self, Error> {
+@@ -160,7 +189 @@
 -        let xml_opt = roxmltree::ParsingOptions {
 -            allow_dtd: true,
 -            ..Default::default()
@@ -156,38 +95,18 @@
 -        let doc =
 -            roxmltree::Document::parse_with_options(text, xml_opt).map_err(Error::ParsingFailed)?;
 +        let doc = guarded_document(text)?;
- 
-         Self::from_xmltree(&doc, opt)
-     }
- 
-     /// Parses `Tree` from `roxmltree::Document`.
-     pub fn from_xmltree(doc: &roxmltree::Document, opt: &Options) -> Result<Self, Error> {
+@@ -172,0 +196,4 @@
 +        policy::check_document(doc)?;
 +        if let Some(css) = &opt.style_sheet {
 +            policy::check_css(css)?;
 +        }
-         let doc = svgtree::Document::parse_tree(doc, opt.style_sheet.as_deref())?;
-         self::converter::convert_doc(&doc, opt)
-     }
 --- a/crates/usvg/src/parser/options.rs
 +++ b/crates/usvg/src/parser/options.rs
-@@ -11,6 +11,8 @@
- /// Processing options.
- #[derive(Debug)]
- pub struct Options<'a> {
+@@ -13,0 +14,2 @@
 +    /// Explicit viewport supplied by the embedding caller.
 +    pub intrinsic_size: Option<Size>,
-     /// Directory that will be used during relative paths resolving.
-     ///
-     /// Expected to be the same as the directory that contains the SVG file,
-@@ -103,6 +105,7 @@
- impl Default for Options<'_> {
-     fn default() -> Options<'static> {
-         Options {
+@@ -105,0 +108 @@
 +            intrinsic_size: None,
-             resources_dir: None,
-             dpi: 96.0,
-             // Default font is user-agent dependent so we can use whichever we like.
 --- /dev/null
 +++ b/crates/usvg/src/parser/policy.rs
 @@ -0,0 +1,151 @@
@@ -344,23 +263,13 @@
 +}
 --- a/crates/usvg/src/text/layout.rs
 +++ b/crates/usvg/src/text/layout.rs
-@@ -8,10 +8,10 @@
- use fontdb::{Database, ID};
- use harfrust::ShapeOptions;
- use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
+@@ -10,0 +11,2 @@
 +use skrifa::prelude::Size;
 +use skrifa::raw::TableProvider;
- use skrifa::MetadataProvider;
- use skrifa::Tag;
+@@ -13,2 +14,0 @@
 -use skrifa::prelude::Size;
 -use skrifa::raw::TableProvider;
- use strict_num::NonZeroPositiveF32;
- use tiny_skia_path::{NonZeroRect, Transform};
- use unicode_script::UnicodeScript;
-@@ -905,11 +905,17 @@
-     for span in &chunk.spans {
-         let font = match fonts_cache.get(&span.font) {
-             Some(v) => v.clone(),
+@@ -908 +908,6 @@
 -            None => continue,
 +            None => {
 +                if resolver.cluster_candidates.is_some() {
@@ -368,26 +277,11 @@
 +                }
 +                continue;
 +            }
-         };
- 
-         let tmp_glyphs = shape_text(
-             &chunk.text,
+@@ -912,0 +918 @@
 +            span,
-             font,
-             span.small_caps,
-             span.apply_kerning,
-@@ -1321,6 +1327,7 @@
- /// Text shaping with font fallback.
- pub(crate) fn shape_text(
-     text: &str,
+@@ -1323,0 +1330 @@
 +    span: &TextSpan,
-     font: Arc<ResolvedFont>,
-     small_caps: bool,
-     apply_kerning: bool,
-@@ -1342,6 +1349,122 @@
-     )
-     .unwrap_or_default();
- 
+@@ -1344,0 +1352,116 @@
 +    if let Some(candidates) = &resolver.cluster_candidates {
 +        // Each candidate is shaped with the entire original context. Replace a
 +        // whole logical cluster, never a glyph index or isolated Unicode scalar.
@@ -504,23 +398,11 @@
 +        return glyphs;
 +    }
 +
-     // Remember all fonts used for shaping.
-     let mut used_fonts = vec![font.id];
- 
-@@ -1409,6 +1532,7 @@
-     for glyph in &glyphs {
-         if glyph.is_missing() {
-             let c = glyph.byte_idx.char_from(text);
+@@ -1411,0 +1535 @@
 +            (resolver.missing_glyph)(c);
-             // TODO: print a full grapheme
-             log::warn!(
-                 "No fonts with a {}/U+{:X} character were found.",
 --- a/crates/usvg/src/text/mod.rs
 +++ b/crates/usvg/src/text/mod.rs
-@@ -72,6 +72,14 @@
- /// you to load additional fonts on-demand and customize the font selection
- /// process.
- pub struct FontResolver<'a> {
+@@ -74,0 +75,8 @@
 +    /// Ordered explicit candidates for cluster replacement. None retains upstream policy.
 +    pub cluster_candidates: Option<
 +        Box<dyn Fn(&Font, &mut Arc<fontdb::Database>) -> Vec<fontdb::ID> + Send + Sync + 'a>,
@@ -529,16 +411,7 @@
 +    pub cluster_result: Box<dyn Fn(&Font, &str, Option<fontdb::ID>) + Send + Sync + 'a>,
 +    /// Called for unresolved shaped scalar values.
 +    pub missing_glyph: Box<dyn Fn(char) + Send + Sync + 'a>,
-     /// Resolver function that will be used when selecting a specific font
-     /// for a generic [`Font`] specification.
-     pub select_font: FontSelectionFn<'a>,
-@@ -84,6 +92,9 @@
- impl Default for FontResolver<'_> {
-     fn default() -> Self {
-         FontResolver {
+@@ -86,0 +95,3 @@
 +            cluster_candidates: None,
 +            cluster_result: Box::new(|_, _, _| {}),
 +            missing_glyph: Box::new(|_| {}),
-             select_font: FontResolver::default_font_selector(),
-             select_fallback: FontResolver::default_fallback_selector(),
-         }
