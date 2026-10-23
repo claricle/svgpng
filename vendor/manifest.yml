@@ -35,12 +35,12 @@ sources:
   claricle_fork:
     status: implemented_and_locally_verified
     upstream_base: 68b14c4c3bccdb60344c777406486b54c36ec1a4
-    commit: 822a9c8515772d6c910dc1103f5ef82fd81d43c0
+    commit: 1b17e0b252844414bf108b59b78e0a2148b3a91a
     patches:
     - path: native/patches/resvg-0.48.1-claricle.patch
       sha256: 4b21d158227f7379dd8111f6093c19fce36dfefc77c0466c07eaa0b8978aa732
       apply_command: git apply --unidiff-zero resvg-0.48.1-claricle.patch
-    source_sha256: '05430799a4788d158c4d7a37fac327bb1bf4c58636ab80716650aad830bc2d7f'
+    source_sha256: '1a708ce8627a52546e088b377f52b69daa874a4dd59d16b0fef7030c7e3cf1ff'
     source_hash_algorithm: SHA256 of sorted relative path + NUL + file SHA256 + newline
       for every file under native/svgpng_renderer excluding target/
     cargo_lock_sha256: 7a0b2feea700467a367436a1958b2fc0db4be1865d905d644d23745630c13b8b
@@ -74,6 +74,13 @@ sources:
     files:
     - path: native/svgpng_renderer/tests/fonts/NotoSans-Bold.ttf
       sha256: 7c15ac396d2ce6bc33a3b4efacdbd322c9e46376599a725c6f790d8036052cab
+    - path: native/svgpng_renderer/tests/fonts/NotoSans-Italic.ttf
+      sha256: 35600501daadd3e9030ee6ed8098fd3c7f31bfd898ca58da8edf793a3231c48b
+    - path: native/svgpng_renderer/tests/fonts/NotoSans-Condensed.ttf
+      sha256: 5c15b8bb0ac1bbd533917b23968c6f0a420f143533e1293cc575f4f9dd543be8
+      source: https://github.com/notofonts/noto-fonts/blob/ffebf8c1ee449e544955a7e813c54f9b73848eac/hinted/ttf/NotoSans/NotoSans-Condensed.ttf
+      license_file: vendor/licenses/fonts/NotoSans-Condensed-OFL-1.1.txt
+      license_sha256: 0dab92d0544f7b233403f14b84a663bdbfa746982eda629e7f4f9ffe1b036feb
     - path: native/svgpng_renderer/tests/fonts/NotoSans-Regular.ttf
       sha256: 6b04c8dd65af6b73eb4279472ed1580b29102d6496a377340e80a40cdb3b22c9
     - path: native/svgpng_renderer/tests/fonts/NotoSansDevanagari-Regular.ttf

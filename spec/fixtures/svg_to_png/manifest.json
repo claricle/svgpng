@@ -7,7 +7,7 @@
     "rust": "1.85.0",
     "source": {
       "upstream_commit": "68b14c4c3bccdb60344c777406486b54c36ec1a4",
-      "fork_commit": "822a9c8515772d6c910dc1103f5ef82fd81d43c0",
+      "fork_commit": "1b17e0b252844414bf108b59b78e0a2148b3a91a",
       "patches": [
         {
           "path": "native/patches/resvg-0.48.1-claricle.patch",
@@ -15,7 +15,7 @@
           "apply_command": "git apply --unidiff-zero resvg-0.48.1-claricle.patch"
         }
       ],
-      "source_sha256": "05430799a4788d158c4d7a37fac327bb1bf4c58636ab80716650aad830bc2d7f",
+      "source_sha256": "1a708ce8627a52546e088b377f52b69daa874a4dd59d16b0fef7030c7e3cf1ff",
       "cargo_lock_sha256": "7a0b2feea700467a367436a1958b2fc0db4be1865d905d644d23745630c13b8b",
       "archives": {
         "resvg": {
@@ -64,7 +64,7 @@
       "ruby": "ruby 3.4.8 (2025-12-17 revision 995b59f666) +PRISM [arm64-darwin25]",
       "platform": "arm64-darwin25"
     },
-    "compatibility": "Initial 0.1.0 native renderer corpus; no published PNG compatibility baseline changes."
+    "compatibility": "Initial 0.1.0 corpus; acceptance fixtures added without changing prior PNG bytes or production rendering sources."
   },
   "encoding": {
     "bit_depth": 8,
