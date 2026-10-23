@@ -72,6 +72,7 @@ module Svgpng
       end
 
       def rgba_to_straight(source, width:, height:, source_stride: nil, destination_stride: nil)
+        source = snapshot_source(source)
         source_stride = width.is_a?(Integer) ? width * 4 : nil if source_stride.nil?
         destination_stride = width.is_a?(Integer) ? width * 4 : nil if destination_stride.nil?
         source_bytes, destination_bytes = validate_buffers(source, width, height, source_stride, destination_stride)
@@ -79,12 +80,22 @@ module Svgpng
       end
 
       def encode_rgba(source, width:, height:, source_stride: nil)
+        source = snapshot_source(source)
         source_stride = width.is_a?(Integer) ? width * 4 : nil if source_stride.nil?
         source_bytes = validate_buffers(source, width, height, source_stride, source_stride).first
         encode_png(source, source_bytes, source_stride, width, height)
       end
 
       private
+
+      def snapshot_source(source)
+        # Class-side checking cannot be overridden by the untrusted source object.
+        # rubocop:disable-next Style/CaseEquality
+        raise InputError, "RGBA source must be bytes" unless String === source
+
+        # Normalize subclass methods and isolate later caller mutation before checking capacity.
+        String.new(source).byteslice(0, RenderProfile::MAX_BUFFER_BYTES).freeze
+      end
 
       def encoder_functions
         @encoder_functions ||= begin

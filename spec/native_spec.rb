@@ -23,6 +23,12 @@ RSpec.describe Svgpng::Native do
 
   let(:library_path) { @library_path }
   let(:library) { described_class.load }
+  let(:misleading_string) do
+    Class.new(String) do
+      def bytesize = 1_000_000
+      def byteslice(*) = ""
+    end
+  end
 
   before do
     allow(described_class).to receive(:packaged_library_path).and_return(library_path)
@@ -126,6 +132,23 @@ RSpec.describe Svgpng::Native do
     result = library.rgba_to_straight(source, width: 1, height: 2, source_stride: 6, destination_stride: 8)
     expect(result.bytes).to eq([1, 2, 3, 255, 0, 0, 0, 0, 4, 5, 6, 255, 0, 0, 0, 0])
     expect(source.bytes).to eq([1, 2, 3, 255, 99, 98, 4, 5, 6, 255, 97, 96])
+  end
+
+  it "validates actual String bytes and bypasses subclass slicing overrides" do
+    expect do
+      library.rgba_to_straight(misleading_string.new("123"), width: 1, height: 1)
+    end.to raise_error(Svgpng::InputError)
+    source = misleading_string.new([1, 2, 3, 255].pack("C*"))
+    expect(library.rgba_to_straight(source, width: 1, height: 1)).to eq([1, 2, 3, 255].pack("C*"))
+  end
+
+  it "copies the checked snapshot when the caller mutates its source after validation" do
+    source = [1, 2, 3, 255].pack("C*")
+    allow(library).to receive(:validate_buffers).and_wrap_original do |method, *args|
+      method.call(*args).tap { source.clear }
+    end
+    expect(library.rgba_to_straight(source, width: 1, height: 1)).to eq([1, 2, 3, 255].pack("C*"))
+    expect(source).to be_empty
   end
 
   it "rejects invalid source bytes, dimensions, strides, and insufficient capacities before allocation" do
@@ -238,6 +261,23 @@ RSpec.describe Svgpng::Native do
     let(:releases) { Fiddle::Function.new(fixture_handle["fixture_releases"], [], Fiddle::TYPE_INT) }
 
     before { set_mode.call(0) }
+
+    it "checks a plain source snapshot and ignores misleading String overrides" do
+      expect do
+        library.encode_rgba(misleading_string.new("123"), width: 1, height: 1)
+      end.to raise_error(Svgpng::InputError)
+      expect(releases.call).to eq(0)
+      expect(library.encode_rgba(misleading_string.new("1234"), width: 1, height: 1)).to eq("PNG!")
+    end
+
+    it "encodes the checked snapshot after the caller clears its original source" do
+      source = String.new("1234")
+      allow(library).to receive(:validate_buffers).and_wrap_original do |method, *args|
+        method.call(*args).tap { source.clear }
+      end
+      expect(library.encode_rgba(source, width: 1, height: 1)).to eq("PNG!")
+      expect(source).to be_empty
+    end
 
     it "copies shim-owned output before releasing it and preserves source including row padding" do
       source = "1234xx5678yy".b.freeze
