@@ -221,6 +221,25 @@ static void test_preallocation_errors(void)
 }
 
 #ifdef SVGPNG_ENCODER_FAULT_TEST
+static void test_warning_status(void)
+{
+    png_encoding_state *state = calloc(1, sizeof(*state));
+    assert(state != NULL);
+    state->png = png_create_write_struct_2(PNG_LIBPNG_VER_STRING, state,
+        encoder_error, encoder_warning, state, encoder_allocate, encoder_release);
+    assert(state->png != NULL);
+    /* Warnings must return for library cleanup, but cannot yield a successful
+     * encode or replace the more specific allocation failure status. */
+    png_warning(state->png, "unexpected writer warning");
+    assert(state->status == SVGPNG_V1_PNG_ENCODING_FAILED);
+    state->status = SVGPNG_V1_PNG_ALLOCATION_FAILED;
+    png_warning(state->png, "allocation warning");
+    assert(state->status == SVGPNG_V1_PNG_ALLOCATION_FAILED);
+    png_destroy_write_struct(&state->png, &state->info);
+    free(state);
+    assert(outstanding_allocations == 0);
+}
+
 static void test_allocation_failure_cleanup(void)
 {
     const uint8_t source[] = { 1, 2, 3, 4 };
@@ -315,6 +334,7 @@ int main(void)
     test_png_profile_and_ownership();
     test_multiple_idat();
 #ifdef SVGPNG_ENCODER_FAULT_TEST
+    test_warning_status();
     test_allocation_failure_cleanup();
     test_output_bounds();
     test_output_growth_failure();

@@ -87,8 +87,14 @@ static void PNGCBAPI encoder_error(png_structp png, png_const_charp message)
 
 static void PNGCBAPI encoder_warning(png_structp png, png_const_charp message)
 {
-    /* Unexpected writer warnings must not silently change the byte profile. */
-    png_error(png, message);
+    png_encoding_state *state = png_get_error_ptr(png);
+    (void)message;
+    /* zlib allocation warnings must return so deflateInit2 can release its
+     * partial state. Fail the encode afterwards, including recovered warnings
+     * that could otherwise silently change the byte profile. */
+    if (state->status == SVGPNG_V1_PNG_OK) {
+        state->status = SVGPNG_V1_PNG_ENCODING_FAILED;
+    }
 }
 
 static void PNGCBAPI encoder_write(png_structp png, png_bytep bytes, png_size_t length)
