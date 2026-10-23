@@ -19,6 +19,18 @@ sources:
     license_files:
       - LICENSE-APACHE
       - LICENSE-MIT
+    vendored_license_inventory:
+      scope: upstream_archive_vendor_directory
+      package_directories: 88
+      cargo_license_metadata_present: 88
+      directories_without_top_level_license_copying_or_notice:
+        - cloudabi
+        - phf_codegen
+        - phf_generator
+        - phf_shared
+        - winapi-i686-pc-windows-gnu
+        - winapi-x86_64-pc-windows-gnu
+      closure_status: inventory_only_redistribution_audit_pending
   claricle_fork:
     status: not_created_or_verified
     upstream_base: 68b14c4c3bccdb60344c777406486b54c36ec1a4
@@ -31,7 +43,8 @@ sources:
   zlib:
     status: pending
 build:
-  rust_toolchain: null
+  minimum_rust_version: 1.85.0
+  rust_toolchain_used: null
   c_toolchain: null
   linker_flags: null
   binary_checksums: null

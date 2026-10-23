@@ -206,9 +206,12 @@ differs:
 * `vendor/manifest.yml` records verified source provenance as it becomes
   available. The upstream archive and upstream base commit are pinned there;
   the exact fork commit, patch digests, complete source/license closure,
-  toolchains, linker/build flags, binary checksums, and artifact sizes remain
-  unset until measured during native implementation. This document does not
-  invent a fork commit, source hash, toolchain identifier, or patch digest.
+  the toolchain actually used for a build, linker/build flags, binary
+  checksums, and artifact sizes remain unset until measured during native
+  implementation. Upstream declares Rust 1.85.0 as its minimum; an isolated
+  1.85.0 toolchain is installed for this work but has not yet been used to
+  build. This document does not invent a fork commit, source hash, toolchain
+  identifier, or patch digest.
 
 The initial package set is seven native gems and one shell gem, all at the same
 version, initially **0.1.0**:
