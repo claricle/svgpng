@@ -1,5 +1,6 @@
+---
 schema_version: 1
-status: upstream_source_verified_custom_fork_pending
+status: pinned_source_and_license_closure_recorded_local_native_verified
 sources:
   resvg:
     project: https://github.com/linebender/resvg
@@ -17,35 +18,78 @@ sources:
       path_validation: no_absolute_or_parent_traversal_entries
     declared_license: Apache-2.0 OR MIT
     license_files:
-      - LICENSE-APACHE
-      - LICENSE-MIT
+    - LICENSE-APACHE
+    - LICENSE-MIT
     vendored_license_inventory:
       scope: upstream_archive_vendor_directory
       package_directories: 88
       cargo_license_metadata_present: 88
       directories_without_top_level_license_copying_or_notice:
-        - cloudabi
-        - phf_codegen
-        - phf_generator
-        - phf_shared
-        - winapi-i686-pc-windows-gnu
-        - winapi-x86_64-pc-windows-gnu
+      - cloudabi
+      - phf_codegen
+      - phf_generator
+      - phf_shared
+      - winapi-i686-pc-windows-gnu
+      - winapi-x86_64-pc-windows-gnu
       closure_status: inventory_only_redistribution_audit_pending
   claricle_fork:
-    status: not_created_or_verified
+    status: implemented_and_locally_verified
     upstream_base: 68b14c4c3bccdb60344c777406486b54c36ec1a4
-    commit: null
-    patches: null
-    source_sha256: null
-    license_closure: pending_dependency_and_patch_audit
+    commit: 822a9c8515772d6c910dc1103f5ef82fd81d43c0
+    patches:
+    - path: native/patches/resvg-0.48.1-claricle.patch
+      sha256: 4b21d158227f7379dd8111f6093c19fce36dfefc77c0466c07eaa0b8978aa732
+      apply_command: git apply --unidiff-zero resvg-0.48.1-claricle.patch
+    source_sha256: '05430799a4788d158c4d7a37fac327bb1bf4c58636ab80716650aad830bc2d7f'
+    source_hash_algorithm: SHA256 of sorted relative path + NUL + file SHA256 + newline
+      for every file under native/svgpng_renderer excluding target/
+    cargo_lock_sha256: 7a0b2feea700467a367436a1958b2fc0db4be1865d905d644d23745630c13b8b
+    license_closure: vendor/rust-dependencies.json
+    license_directory: vendor/licenses
+    upstream_license: Apache-2.0 OR MIT
+    bridge_license: MIT
   libpng:
-    status: pending
+    version: 1.6.59
+    commit: cd952f49f95bb27154ae77dbb103032d95f6e580
+    archive:
+      url: https://api.github.com/repos/pnggroup/libpng/tarball/cd952f49f95bb27154ae77dbb103032d95f6e580
+      sha256: 7e148caf27025d7a38dfea58e1ed91d56a002a8c9d4f3375ff4eacba74c82863
+      extracted_root: pnggroup-libpng-cd952f4
+    license_files:
+    - vendor/licenses/libpng/LICENSE
+    - vendor/licenses/libpng/LICENSES/MIT-0.txt
+    - vendor/licenses/libpng/LICENSES/MIT.txt
   zlib:
-    status: pending
+    version: 1.3.2
+    archive:
+      url: https://zlib.net/zlib-1.3.2.tar.gz
+      sha256: bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16
+      extracted_root: zlib-1.3.2
+    license_files:
+    - vendor/licenses/zlib/LICENSE
+  font_fixtures:
+    source: resvg v0.48.1 release archive crates/resvg/tests/fonts
+    license: OFL-1.1
+    license_file: vendor/licenses/fonts/OFL-1.1.txt
+    files:
+    - path: native/svgpng_renderer/tests/fonts/NotoSans-Bold.ttf
+      sha256: 7c15ac396d2ce6bc33a3b4efacdbd322c9e46376599a725c6f790d8036052cab
+    - path: native/svgpng_renderer/tests/fonts/NotoSans-Regular.ttf
+      sha256: 6b04c8dd65af6b73eb4279472ed1580b29102d6496a377340e80a40cdb3b22c9
+    - path: native/svgpng_renderer/tests/fonts/NotoSansDevanagari-Regular.ttf
+      sha256: 84cda635b5395e22f428c5802b6c36eaeec66750c8b387279424a48545ac1d74
+    copyright_file: vendor/licenses/fonts/COPYRIGHT.txt
 build:
   minimum_rust_version: 1.85.0
-  rust_toolchain_used: null
-  c_toolchain: null
-  linker_flags: null
-  binary_checksums: null
-  artifact_sizes: null
+  rust_toolchain_used: 1.85.0
+  c_toolchain: Apple clang 17.0.0 (clang-1700.6.3.2), arm64-apple-darwin25.5.0 local
+    qualification
+  linker_flags:
+    arm64-darwin:
+    - "-lSystem"
+    - "-lc"
+    - "-lm"
+  binary_checksums:
+  artifact_sizes:
+  artifact_policy: Binary checksums and sizes are recorded per target build; no cross-target
+    qualification inferred from local build.

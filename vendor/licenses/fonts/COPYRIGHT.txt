@@ -1,0 +1,10 @@
+Copyright notices read from the unmodified fixture fonts' OpenType name ID 0:
+
+NotoSans-Regular.ttf and NotoSans-Bold.ttf:
+Copyright 2015 Google Inc. All Rights Reserved.
+
+NotoSansDevanagari-Regular.ttf:
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/devanagari)
+
+All three fonts declare SIL Open Font License 1.1 in OpenType name ID 13.
+Their complete license text is supplied in OFL-1.1.txt.
