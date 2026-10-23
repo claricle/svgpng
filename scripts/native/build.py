@@ -154,7 +154,10 @@ def build(target, work, output):
     elif suffix == 'dll':
         args += ['-static-libgcc', '-lws2_32', '-luserenv', '-lbcrypt', '-lntdll']
     else:
-        args += ['-static-libgcc', '-ldl', '-lpthread', '-lm']
+        # Bind private static dependencies internally even when Ruby loaded libz first.
+        exports = work / 'svgpng.exports'
+        exports.write_text('{ global: svgpng_v1_*; local: *; };\n')
+        args += [f'-Wl,--version-script={exports}', '-static-libgcc', '-ldl', '-lpthread', '-lm']
     run(*args, '-o', library)
     closure = inspect(target, library)
     (output / 'closure.txt').write_text(closure)

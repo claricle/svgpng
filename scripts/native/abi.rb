@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 # Fail with the original loader/ABI message before corpus diagnostics normalize it.
+# Exercise coexistence with Ruby's system zlib before loading the private codec.
+require "zlib"
 require "svgpng"
 require "svgpng/native"
 
