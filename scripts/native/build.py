@@ -71,6 +71,9 @@ def dependency(name, source, work, prefix, zlib_prefix=None):
             '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
             f'-DCMAKE_INSTALL_PREFIX={prefix}', '-DCMAKE_INSTALL_LIBDIR=lib',
             '-DBUILD_SHARED_LIBS=OFF']
+    if name == 'zlib':
+        args += ['-DZLIB_BUILD_SHARED=OFF', '-DZLIB_BUILD_STATIC=ON',
+                 '-DZLIB_BUILD_TESTING=OFF']
     if name == 'libpng':
         args += ['-DPNG_SHARED=OFF', '-DPNG_STATIC=ON', '-DPNG_TESTS=OFF',
                  '-DPNG_TOOLS=OFF', f'-DZLIB_LIBRARY={zlib_prefix / "lib/libz.a"}',
@@ -81,7 +84,7 @@ def dependency(name, source, work, prefix, zlib_prefix=None):
     canonical = prefix / ('lib/libpng16.a' if name == 'libpng' else 'lib/libz.a')
     if not canonical.is_file():
         alternatives = [prefix / 'lib' / filename for filename in
-                        (['libpng16_static.a', 'libpng_static.a'] if name == 'libpng' else ['libzlibstatic.a'])]
+                        (['libpng16_static.a', 'libpng_static.a'] if name == 'libpng' else ['libzs.a', 'libzlibstatic.a'])]
         matches = [path for path in alternatives if path.is_file()]
         if len(matches) != 1:
             raise ValueError(f'{name}: missing unambiguous static archive in {prefix}')

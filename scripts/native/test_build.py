@@ -48,6 +48,19 @@ class SourceTests(unittest.TestCase):
             self.assertEqual(neighbor.read_bytes(), b'preserved')
 
 
+class DependencyTests(unittest.TestCase):
+    def test_windows_zlib_static_archive_is_staged_without_shared_build(self):
+        with tempfile.TemporaryDirectory() as work:
+            root = Path(work)
+            prefix = root / 'prefix'
+            (prefix / 'lib').mkdir(parents=True)
+            (prefix / 'lib/libzs.a').write_bytes(b'static archive')
+            with patch('build.acquire', return_value=root / 'source'), patch('build.run') as run:
+                build.dependency('zlib', {}, root, prefix)
+            self.assertEqual((prefix / 'lib/libz.a').read_bytes(), b'static archive')
+            self.assertIn('-DZLIB_BUILD_SHARED=OFF', run.call_args_list[0].args)
+
+
 class ClosureTests(unittest.TestCase):
     def test_ucrt_closure_accepted(self):
         report = 'pei-x86-64\nDLL Name: KERNEL32.dll\nDLL Name: ucrtbase.dll\n'
