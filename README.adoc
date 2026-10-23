@@ -51,3 +51,20 @@ compiler) and links the explicit `lib/libpng16.a` and `lib/libz.a` archives.
 Missing dependencies and different header/runtime versions fail the check.
 It does not establish source provenance, a complete renderer dependency closure,
 cross-platform output identity, or an installable native renderer package.
+
+To check a staged eight-gem set, provide its checksum manifest and an empty
+temporary install directory:
+
+[source,sh]
+----
+SVGPNG_RELEASE_DIR=/path/to/staged-gems \
+SVGPNG_RELEASE_MANIFEST=/path/to/checksums.yml \
+SVGPNG_RESOLUTION_DESTINATION=/path/to/empty-install \
+bundle exec rake svgpng:verify_package_resolution
+----
+
+This verifies artifact digests and package metadata, builds a temporary local
+RubyGems index containing the full set, and resolves and installs from that index
+without network access. It does not execute the installed renderer. The test suite
+uses real gem containers with synthetic native payloads; those fixtures establish
+selection and installation behavior only.

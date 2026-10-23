@@ -1,6 +1,6 @@
 # SVG-to-PNG rendering contract
 
-**Status: contract accepted for implementation; native delivery gates pending.** This decision fixes the public behavior and proposed ownership for the renderer. The current repository supplies a Ruby shell, exact profile resolution, standalone input guards, a checked C RGBA conversion core, and a staged release-set verifier. No complete native shim, resvg fork, platform package, golden corpus, native render, or cross-platform byte-identity result is present. Proposed components below remain requirements until backed by implementation evidence.
+**Status: contract accepted for implementation; native delivery gates pending.** This decision fixes the public behavior and proposed ownership for the renderer. The current repository supplies a Ruby shell, exact profile resolution, standalone input guards, checked C RGBA conversion, a pinned-dependency PNG encoder source, an owned Fiddle binding, and staged release/package-resolution checks. No complete native shim, resvg fork, platform package, golden corpus, native render, or cross-platform byte-identity result is present. Proposed components below remain requirements until backed by implementation evidence.
 
 ## Public Ruby boundary
 
@@ -293,11 +293,15 @@ and changelog entry, and from 1.0 it requires a major version bump (working
 rule pending confirmation).
 
 Current verification state: focused examples exercise the Ruby shell, exact
-profiles, standalone input guards, C pixel conversion, and release-set verifier.
+profiles, standalone input guards, ordered warning collection, C pixel conversion,
+native ABI ownership controls, and release/package-resolution verification.
 The shell builds, installs, and loads with an empty executable search path; its
 render call raises the documented unsupported-platform error. The release-set
-specs use synthetic bytes to exercise verification, not real native packages.
-Native renderer compilation, PNG encoder behavior, native package resolution,
+specs build real gem containers with synthetic native payloads. They exercise
+metadata, full-index resolution and installation, not usable native packages.
+The encoder source rejects dependency versions other than libpng 1.6.59 and
+zlib 1.3.2; its real encode/fault tests require those explicit static installations.
+Native renderer compilation, actual PNG encoder behavior, real native package resolution,
 clean-target renders, real staged artifact checksums, golden parity, publication,
 and all seven support gates remain pending.
 
