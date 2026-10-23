@@ -213,6 +213,21 @@ differs:
   build. This document does not invent a fork commit, source hash, toolchain
   identifier, or patch digest.
 
+### Local macOS renderer build
+
+`rake native:build_renderer` is a developer-only, host build helper. It
+requires explicit `SVGPNG_CARGO_HOME`, `SVGPNG_RUSTUP_HOME`,
+`SVGPNG_LIBPNG_PREFIX`, `SVGPNG_ZLIB_PREFIX`, and
+`SVGPNG_RENDERER_OUTPUT` values. The Cargo invocation is locked and offline;
+the dependency prefixes must contain `include/png.h` plus `lib/libpng16.a`
+and `include/zlib.h` plus `lib/libz.a`. It combines the Rust static library
+with `native/svgpng_shim/rgba.c` and `encoder.c` and links those exact PNG and
+zlib archives. The output must be a `.dylib` under `/private/tmp`; this task
+does not populate `lib/svgpng/native/`, create a gem, cross-compile, or qualify
+a release target. Apple framework and system-library flags are local linker
+inputs. Rust's reported native static-library requirements on the macOS build
+host were `-lSystem -lc -lm`; no Apple frameworks were reported.
+
 The initial package set is seven native gems and one shell gem, all at the same
 version, initially **0.1.0**:
 
