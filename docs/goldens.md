@@ -7,6 +7,14 @@ loading a native renderer. Native golden specs use the explicitly supplied
 `SVGPNG_TEST_NATIVE_LIBRARY`; see the native build instructions in
 [`svg-to-png.md`](decisions/svg-to-png.md).
 
+The committed corpus includes width-only and height-only sizing, two-axis
+containment, exact decimal scale, and a positive 32768-by-1 canvas boundary. Font
+cases use supplied regular, bold, italic, and condensed faces, caller-ordered
+fallback families, whole-cluster fallback, and first-use warning order with
+deduplication. Native font integration also compares style and stretch selection
+against exact-face controls in both supplied-face orders. These local acceptance
+checks do not establish the pending seven-target byte-identity gate.
+
 Golden changes are intentional compatibility changes. Review the renderer,
 encoder, dependency, version and CHANGELOG impact before regeneration. Build the
 native artifact from the source pinned in `vendor/manifest.yml`, finish that build,

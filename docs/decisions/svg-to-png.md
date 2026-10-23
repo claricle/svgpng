@@ -1,6 +1,12 @@
 # SVG-to-PNG rendering contract
 
-**Status: contract accepted for implementation; native delivery gates pending.** This decision fixes the public behavior and proposed ownership for the renderer. The current repository supplies a Ruby shell, exact profile resolution, standalone input guards, checked C RGBA conversion, a pinned-dependency PNG encoder source, an owned Fiddle binding, and staged release/package-resolution checks. No complete native shim, resvg fork, platform package, golden corpus, native render, or cross-platform byte-identity result is present. Proposed components below remain requirements until backed by implementation evidence.
+**Status: implemented and locally verified; native delivery gates pending.**
+This decision fixes the public behavior and native ownership. The Ruby pipeline,
+owned resvg fork and render ABI, reference policy, explicit-font resolver, PNG
+encoder, golden corpus, and installed developer package have local acceptance
+evidence. Seven-target CI, the complete staged native release set, and
+cross-platform byte identity remain pending. No publication or platform-support
+claim follows from local verification.
 
 ## Public Ruby boundary
 
@@ -14,7 +20,7 @@ Svgpng.render(svg_bytes, profile: {}, fonts: {}, fallback_fonts: [])
 with only symbol keys `:width`, `:height`, `:scale`, and `:background`.
 `fonts` maps a requested CSS family spelling to one or more `Svgpng::FontFace`
 objects. `fallback_fonts` is an ordered array of those faces. A face is
-constructed as `Svgpng::FontFace.new(bytes:, source_id:)`; its bytes are
+constructed as `Svgpng::FontFace.new(bytes:, source_id:, family: nil)`; its bytes are
 immutable after construction and `source_id` is caller-provided diagnostic
 text. Family names, style, weight, stretch, and glyph coverage are derived from
 OpenType metadata in the bytes. Caller declarations cannot override metadata.
@@ -136,8 +142,10 @@ Emit substitution warnings in first document-use order. Deduplicate by
 requested family, selected family, style/weight/stretch, and missing scalar set.
 Each warning names requested and selected families and the triggering scalars.
 The result's font manifest reports resolved face/source diagnostics and
-byte-derived SHA-256 digests. It does not promise that metadata extraction or
-the native selection hook is implemented in the current shell.
+byte-derived SHA-256 digests. Real native acceptance compares regular, bold,
+italic, and condensed selection with exact-face controls, including fallback
+selection in both supplied-face orders. The golden corpus records caller family
+order and first-use warning order with deduplication.
 
 ## SVG references and parser boundary
 
@@ -186,36 +194,34 @@ promise a blanket error for every ignored or unsupported construct.
 
 ## Native ownership and packaging decision
 
-The intended native pipeline is owned as follows; paths are proposed until the
-scaffold is implemented and must be reconciled if final repository layout
-differs:
+The native pipeline is owned as follows:
 
-* `native/svgpng_shim/` owns the sole narrow C ABI, native allocations and
-  frees, status mapping, font-byte loading/resolver callback, render buffer,
-  unpremultiplication, and PNG encoding. Ruby never frees memory allocated by
-  a different allocator.
-* The intended Claricle-maintained resvg fork is based on upstream **v0.48.1**
-  and contains only the reviewable font-selection/diagnostic hook and
-  parser-side rejection of forbidden references. The upstream release archive
-  is now staged and checksum-verified as recorded in `vendor/manifest.yml`;
-  the custom fork, patch set, and their license closure are still pending. The
-  upstream C API alone is not assumed to enforce this contract.
-* The shim statically links the fork, **libpng 1.6.59**, and **zlib 1.3.2**.
-  The packaged shared library is the dependency closure; neither Fiddle nor the
-  dynamic loader may resolve ambient copies of these libraries.
-* `lib/svgpng/native.rb` binds only the C ABI through Fiddle;
+* `native/svgpng_renderer/` owns the Rust C ABI for guarded root attributes,
+  rendering, render-output allocation/freeing, and status diagnostics. Its
+  isolated upstream copy implements font-byte loading, resolver and shaping
+  hooks, and parser-side reference rejection.
+* `native/svgpng_shim/` owns checked RGBA unpremultiplication and the PNG encoder
+  ABI, including its output allocation/freeing. Ruby returns copied owned bytes
+  and never frees memory allocated by a different allocator.
+* The Claricle-maintained resvg fork is based on upstream **v0.48.1**. Its
+  reviewable patch and exact source identity are recorded in
+  `vendor/manifest.yml`: fork commit
+  `1b17e0b252844414bf108b59b78e0a2148b3a91a`, source SHA-256
+  `1a708ce8627a52546e088b377f52b69daa874a4dd59d16b0fef7030c7e3cf1ff`.
+  The upstream C API alone is not assumed to enforce this contract.
+* The shared library statically links the fork, **libpng 1.6.59**, and
+  **zlib 1.3.2**. The packaged shared library is the dependency closure; neither
+  Fiddle nor the dynamic loader may resolve ambient copies of these libraries.
+* `lib/svgpng/native.rb` and `native_render.rb` bind the C ABI through Fiddle;
   `lib/svgpng/renderer.rb` coordinates Ruby input validation and native calls.
   Do not compile at gem install time, add a compiled Ruby extension, shell out,
   or search system library paths.
-* `vendor/manifest.yml` records verified source provenance as it becomes
-  available. The upstream archive and upstream base commit are pinned there;
-  the exact fork commit, patch digests, complete source/license closure,
-  the toolchain actually used for a build, linker/build flags, binary
-  checksums, and artifact sizes remain unset until measured during native
-  implementation. Upstream declares Rust 1.85.0 as its minimum; an isolated
-  1.85.0 toolchain is installed for this work but has not yet been used to
-  build. This document does not invent a fork commit, source hash, toolchain
-  identifier, or patch digest.
+* `vendor/manifest.yml` records source/archive and patch digests, the Cargo lock
+  hash, dependency and font license inventory, and measured local build settings.
+  Rust **1.85.0** was used for the local build. The golden manifest records the
+  actual artifact checksum and size. Per-target release binary checksums and
+  sizes remain pending; upstream license inventory still identifies its
+  redistribution audit as pending.
 
 ### Local macOS renderer build
 
@@ -292,9 +298,9 @@ Omit time, text, DPI, gamma, chromaticity, sRGB, ICC, EXIF, and every other
 ancillary chunk. Golden tests must inspect structure and chunk order as well as
 the complete file digest.
 
-The exact chunk boundaries and compression output are to be pinned and proved
-by the encoder implementation and golden fixtures. These settings define the
-required profile; they do not constitute evidence of delivered byte identity.
+The encoder checks and committed golden PNGs pin local chunk structure and
+compression output. Matching these bytes on all seven targets remains a delivery
+gate; local results alone do not establish cross-platform byte identity.
 
 ## Delivery and evidence gates
 
@@ -333,24 +339,27 @@ compatibility change; before 1.0, a byte change requires a minor version bump
 and changelog entry, and from 1.0 it requires a major version bump (working
 rule pending confirmation).
 
-Current verification state: focused examples exercise the Ruby shell, exact
-profiles, standalone input guards, ordered warning collection, C pixel conversion,
-native ABI ownership controls, and release/package-resolution verification.
-The shell builds, installs, and loads with an empty executable search path; its
-render call raises the documented unsupported-platform error. The release-set
-specs build real gem containers with synthetic native payloads. They exercise
-metadata, full-index resolution and installation, not usable native packages.
-The encoder source rejects dependency versions other than libpng 1.6.59 and
-zlib 1.3.2; its real encode/fault tests require those explicit static installations.
-Native renderer compilation, actual PNG encoder behavior, real native package resolution,
-clean-target renders, real staged artifact checksums, golden parity, publication,
-and all seven support gates remain pending.
+Current verification state: Ruby and real native acceptance cover exact profiles,
+input/reference guards, owned ABI buffers, PNG encoding, and explicit-font
+selection and diagnostics. Sizing goldens include width-only, height-only,
+two-axis containment, decimal scale, and the positive 32768-by-1 boundary. Font
+acceptance includes weight, italic style, condensed stretch, ordered fallback,
+whole-cluster coverage, and first-use deduplicated warnings. Golden checks compare
+repeated clean-process renders with committed PNG bytes and metadata. A local
+macOS developer gem has been installed and rendered through its installed API.
+The shell also builds, installs, and loads without a native library, with the
+documented render-time unsupported-platform failure. Release-set resolution
+specs use real gem containers with synthetic native payloads, proving selection
+and installation only. The seven-target CI qualification and real staged release
+artifact set remain pending, as do publication and the cross-platform support
+gates.
 
 ### Initial Ruby preflight representation
 
 The Ruby raw-input guard currently accepts UTF-8 XML bytes (including an optional
 UTF-8 BOM); invalid UTF-8 and NUL-bearing encodings raise `InputError` before parsing.
-The native parser and URI/CSS policy remain pending and are not replaced by this guard.
+The native parser separately enforces URI/CSS and nested-resource policy; this
+Ruby guard does not replace that parser boundary.
 Other XML encodings are a current guard limitation, not a finalized restriction
 on the byte-oriented render contract.
 Intrinsic numeric tokens are bounded to 1024 bytes and an absolute decimal exponent
