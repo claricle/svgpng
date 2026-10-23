@@ -31,4 +31,18 @@ RSpec.describe Svgpng::RawInput do
     expect(validated).to be_frozen
     expect { described_class.validate!("<svg/> ") }.to raise_error(Svgpng::LimitError)
   end
+
+  it "checks actual bytes when a String subclass overrides inspection" do
+    stub_const("Svgpng::Limits::SVG_BYTES", 6)
+    misleading = Class.new(String) do
+      def bytesize = 0
+      def dup = "<svg/>"
+    end
+
+    expect { described_class.validate!(misleading.new("<svg/> ")) }.to raise_error(Svgpng::LimitError)
+    expect do
+      described_class.validate!(misleading.new("\xff".b))
+    end.to raise_error(Svgpng::InputError)
+    expect(described_class.validate!(misleading.new("<svg/>"))).to be_instance_of(String)
+  end
 end

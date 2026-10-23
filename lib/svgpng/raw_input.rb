@@ -4,7 +4,11 @@ module Svgpng
   # Runs before any XML parser. This is not the native URI/CSS policy.
   module RawInput
     def self.validate!(bytes)
-      raise InputError, "SVG input must be a String" unless bytes.is_a?(String)
+      # Class-side checking and a plain snapshot prevent caller overrides/mutation.
+      # rubocop:disable-next Style/CaseEquality
+      raise InputError, "SVG input must be a String" unless String === bytes
+
+      bytes = String.new(bytes)
       raise LimitError, "SVG exceeds #{Limits::SVG_BYTES} bytes" if bytes.bytesize > Limits::SVG_BYTES
 
       text = bytes.dup.force_encoding(Encoding::UTF_8)

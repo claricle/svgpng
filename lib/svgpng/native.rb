@@ -4,6 +4,7 @@ require_relative "errors"
 require_relative "render_profile"
 require "fiddle"
 require "fiddle/struct"
+require_relative "native_render"
 
 module Svgpng
   # Opens only the artifact belonging to this installed gem, on explicit request.
@@ -45,6 +46,8 @@ module Svgpng
     # Keep the two ownership-related ABI primitives and their guards in one binding.
     # rubocop:disable-next Metrics/ClassLength
     class Library
+      include RenderBinding
+
       SIZE_MAX = (1 << (Fiddle::SIZEOF_SIZE_T * 8)) - 1
       POINTER_MAX = (1 << (Fiddle::SIZEOF_VOIDP * 8)) - 1
       STATUS_ERRORS = { 1 => InputError, 2 => LimitError, 3 => LimitError,
