@@ -72,8 +72,16 @@ class ClosureTests(unittest.TestCase):
                 build.inspect('aarch64-linux-musl', 'library')
 
     def test_musl_preserves_target_architecture(self):
-        with patch('build.run', side_effect=['NEEDED libc.musl-aarch64.so.1', 'AArch64']):
+        with patch('build.run', side_effect=['NEEDED libc.musl-aarch64.so.1', 'AArch64',
+                                             '\n'.join('000 T ' + name for name in build.ABI_SYMBOLS)]):
             self.assertIn('musl-aarch64', build.inspect('aarch64-linux-musl', 'library'))
+
+    def test_elf_rejects_codec_symbols_that_allow_interposition(self):
+        symbols = '\n'.join('000 T ' + name for name in build.ABI_SYMBOLS | {'zlibVersion'})
+        with patch('build.run', side_effect=['NEEDED libc.so.6',
+                                             'Advanced Micro Devices X86-64', symbols]):
+            with self.assertRaisesRegex(ValueError, 'non-private'):
+                build.inspect('x86_64-linux', 'library')
 
 
 if __name__ == '__main__':

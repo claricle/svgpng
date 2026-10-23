@@ -22,6 +22,9 @@ TARGETS = {
     'x64-mingw-ucrt': ('x86_64-pc-windows-gnu', 'dll'),
 }
 
+ABI_SYMBOLS = {'svgpng_v1_rgba_to_straight', 'svgpng_v1_png_encode', 'svgpng_v1_png_free',
+               'svgpng_v1_root_attributes', 'svgpng_v1_render', 'svgpng_v1_render_free'}
+
 
 def run(*args, **kwargs):
     print('+', ' '.join(map(str, args)), flush=True)
@@ -117,6 +120,11 @@ def inspect(target, library):
                    r'(libc|libm|libdl|libpthread|librt)\.so\.[0-9]+|ld-linux[^/]*\.so\.[0-9]+')
         if not needed or any(not re.fullmatch(allowed, name) for name in needed):
             raise ValueError(f'non-system or wrong-libc ELF closure: {needed}')
+        symbols = run('nm', '-D', '--defined-only', library)
+        exported = {line.split()[-1] for line in symbols.splitlines() if line.strip()}
+        if exported != ABI_SYMBOLS:
+            raise ValueError(f'non-private or incomplete ELF ABI exports: {sorted(exported)}')
+        report += '\nExported ABI symbols:\n' + symbols
     return report
 
 
