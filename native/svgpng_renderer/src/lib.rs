@@ -107,7 +107,7 @@ fn font_detail(font: &usvg::Font, text: &str) -> Value {
     let mut scalars = text.chars().map(|c| c as u32).collect::<Vec<_>>();
     scalars.sort_unstable();
     scalars.dedup();
-    json!({"requested_family":font.families().iter().map(ToString::to_string).collect::<Vec<_>>().join(", "),"scalars":scalars,"style":format!("{:?}",font.style()).to_ascii_lowercase(),"weight":font.weight(),"stretch":format!("{:?}",font.stretch()).to_ascii_lowercase()})
+    json!({"requested_family":font.families().iter().map(|family| match family { usvg::FontFamily::Named(name) => name.clone(), generic => generic.to_string() }).collect::<Vec<_>>().join(", "),"scalars":scalars,"style":format!("{:?}",font.style()).to_ascii_lowercase(),"weight":font.weight(),"stretch":format!("{:?}",font.stretch()).to_ascii_lowercase()})
 }
 fn query_family(
     font: &usvg::Font,
@@ -577,6 +577,15 @@ mod tests {
             5
         );
     }
+    #[test]
+    fn missing_named_family_diagnostics_preserve_raw_name() {
+        let (code, _, detail) = run(
+            "<svg xmlns='http://www.w3.org/2000/svg'><text font-family='Absent' x='0' y='1'>A</text></svg>",
+            &options(),
+        );
+        assert_eq!(code, 5);
+        assert_eq!(detail["error"]["requested_family"], "Absent");
+    }
     fn text_options() -> RenderOptions {
         let mut o = options();
         o.width = 120;
@@ -603,6 +612,7 @@ mod tests {
         let direct = svg.replace("Noto Sans'", "Noto Sans Devanagari'");
         let missing = run_fonts(svg, &text_options(), &[face(NOTO, "Noto Sans", usize::MAX)]);
         assert_eq!(missing.0, 6);
+        assert_eq!(missing.2["error"]["requested_family"], "Noto Sans");
         assert!(
             missing.2["error"]["scalars"]
                 .as_array()
