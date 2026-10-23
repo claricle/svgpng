@@ -1,0 +1,19 @@
+{
+  "upstream_tag": "v0.48.1",
+  "upstream_archive": "https://github.com/linebender/resvg/releases/download/v0.48.1/resvg-0.48.1.tar.xz",
+  "upstream_archive_sha256": "13ed5a2bae7a01156288ecae5bf944cf7d1c572742c19fc68027947a4d87294c",
+  "patch_sha256": "4b21d158227f7379dd8111f6093c19fce36dfefc77c0466c07eaa0b8978aa732",
+  "cargo_lock_sha256": "7a0b2feea700467a367436a1958b2fc0db4be1865d905d644d23745630c13b8b",
+  "changed_upstream_files": [
+    "crates/resvg/Cargo.toml",
+    "crates/usvg/Cargo.toml",
+    "crates/usvg/src/parser/converter.rs",
+    "crates/usvg/src/parser/image.rs",
+    "crates/usvg/src/parser/mod.rs",
+    "crates/usvg/src/parser/options.rs",
+    "crates/usvg/src/parser/policy.rs",
+    "crates/usvg/src/text/layout.rs",
+    "crates/usvg/src/text/mod.rs"
+  ],
+  "apply_command": "git apply --unidiff-zero resvg-0.48.1-claricle.patch"
+}

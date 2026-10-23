@@ -1,0 +1,1 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8"><defs><path id="p" d="M1 1h4v4H1z"/></defs><use href="#p" fill="green"/><use href="#p" x="6" fill="blue"/></svg>

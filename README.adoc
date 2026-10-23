@@ -1,13 +1,81 @@
 = Svgpng
 
-Svgpng renders SVG to PNG, with byte-identical output on every supported
-platform.
+Svgpng is a byte-oriented Ruby API for rendering SVG to PNG. This checkout
+implements the Ruby pipeline, owned native renderer, explicit font selection, and
+pinned PNG encoder. Real native renders, goldens, and an installed developer
+package have been checked locally. Seven-target CI and release artifact
+qualification remain pending; no platform support or cross-platform byte identity
+is advertised yet.
 
-It wraps the resvg renderer, pinned to one release and shipped prebuilt for
-each platform, so nothing compiles at install time. System fonts are never
-read: fonts come only from the caller, so the same SVG and the same fonts
-always give the same PNG bytes.
+== Current status
 
-== Status
+The Ruby boundary and fixed rendering contract are recorded in
+link:docs/decisions/svg-to-png.md[the rendering decision]. Rendering requires a
+matching packaged native library; without one it raises
+`Svgpng::UnsupportedPlatformError`. Requiring the Ruby API does not load native
+code or probe system libraries.
 
-Under development.
+== Interface
+
+`Svgpng.render(svg_bytes, profile: {}, fonts: {}, fallback_fonts: [])` accepts
+SVG bytes and caller-supplied fonts. It returns a `Svgpng::Result` with
+`png_bytes`, `width`, `height`, `warnings`, and `font_manifest`. The API accepts
+no filesystem, network, base-directory, resource-map, or loader input. Font
+faces use `Svgpng::FontFace.new(bytes:, source_id:, family: nil)`; metadata is
+read from the font bytes. The optional `family:` value asserts a matching family
+for fallback use and cannot override the supplied metadata.
+
+Fixed limits, sizing, reference policy, font selection, and PNG encoding have
+local native acceptance coverage. The decision document records their contract,
+ownership, target packages, and the checks still required before support can be
+advertised.
+
+== Developer checks
+
+Run `bundle exec rspec` and `bundle exec rubocop`. The default suite includes
+the dependency-free C pixel conversion checks and native loader controls.
+The lazy Fiddle binding covers root attributes, rendering, pixel conversion, and
+PNG encoding. Real font and golden acceptance uses an explicitly built artifact:
+
+[source,sh]
+----
+SVGPNG_TEST_NATIVE_LIBRARY=/absolute/path/to/svgpng.dylib \
+bundle exec rspec spec/renderer_font_integration_spec.rb spec/svgpng/golden_spec.rb
+----
+
+See link:docs/goldens.md[the golden workflow] for corpus coverage and intentional
+regeneration.
+
+The PNG encoder source requires libpng 1.6.59 and zlib 1.3.2. To run its
+round-trip, chunk-profile, deterministic-byte, and allocation-failure assertions,
+provide verified static dependency installations:
+
+[source,sh]
+----
+SVGPNG_LIBPNG_PREFIX=/path/to/libpng-1.6.59 \
+SVGPNG_ZLIB_PREFIX=/path/to/zlib-1.3.2 \
+bundle exec rake native:check_encoder
+----
+
+This developer task invokes a C11 compiler (`SVGPNG_CC`, or Ruby's configured
+compiler) and links the explicit `lib/libpng16.a` and `lib/libz.a` archives.
+Missing dependencies and different header/runtime versions fail the check.
+It does not establish source provenance, a complete renderer dependency closure,
+cross-platform output identity, or an installable native renderer package.
+
+To check a staged eight-gem set, provide its checksum manifest and an empty
+temporary install directory:
+
+[source,sh]
+----
+SVGPNG_RELEASE_DIR=/path/to/staged-gems \
+SVGPNG_RELEASE_MANIFEST=/path/to/checksums.yml \
+SVGPNG_RESOLUTION_DESTINATION=/path/to/empty-install \
+bundle exec rake svgpng:verify_package_resolution
+----
+
+This verifies artifact digests and package metadata, builds a temporary local
+RubyGems index containing the full set, and resolves and installs from that index
+without network access. It does not execute the installed renderer. The test suite
+uses real gem containers with synthetic native payloads; those fixtures establish
+selection and installation behavior only.

@@ -1,0 +1,29 @@
+[package]
+name = "svgpng_renderer"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[workspace]
+members = ["upstream/crates/resvg", "upstream/crates/usvg"]
+resolver = "2"
+
+[workspace.package]
+license = "Apache-2.0 OR MIT"
+
+[dependencies]
+resvg = { path = "upstream/crates/resvg", default-features = false, features = ["text", "raster-images"] }
+serde_json = "=1.0.145"
+sha2 = "=0.10.9"
+unicode-normalization = "=0.1.24"
+skrifa = { version = "=0.44.0", default-features = false, features = ["std"] }
+
+[profile.release]
+panic = "unwind"
+lto = true
+codegen-units = 1

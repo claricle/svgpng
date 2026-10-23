@@ -1,0 +1,417 @@
+--- a/crates/resvg/Cargo.toml
++++ b/crates/resvg/Cargo.toml
+@@ -11 +11 @@
+-workspace = "../.."
++workspace = "../../.."
+--- a/crates/usvg/Cargo.toml
++++ b/crates/usvg/Cargo.toml
+@@ -14 +14 @@
+-workspace = "../.."
++workspace = "../../.."
+@@ -20,0 +21 @@
++cssparser = "=0.35.0"
+--- a/crates/usvg/src/parser/converter.rs
++++ b/crates/usvg/src/parser/converter.rs
+@@ -20 +20 @@
+-use super::{Error, Options, marker};
++use super::{marker, Error, Options};
+@@ -523,0 +524,3 @@
++    if let Some(size) = opt.intrinsic_size {
++        return (Ok(size), false);
++    }
+--- a/crates/usvg/src/parser/image.rs
++++ b/crates/usvg/src/parser/image.rs
+@@ -86,28 +86 @@
+-        Box::new(move |href: &str, opts: &Options| {
+-            let path = opts.get_abs_path(std::path::Path::new(href));
+-
+-            if path.exists() {
+-                let data = match std::fs::read(&path) {
+-                    Ok(data) => data,
+-                    Err(_) => {
+-                        log::warn!("Failed to load '{}'. Skipped.", href);
+-                        return None;
+-                    }
+-                };
+-
+-                match get_image_file_format(&path, &data) {
+-                    Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(Arc::new(data))),
+-                    Some(ImageFormat::PNG) => Some(ImageKind::PNG(Arc::new(data))),
+-                    Some(ImageFormat::GIF) => Some(ImageKind::GIF(Arc::new(data))),
+-                    Some(ImageFormat::WEBP) => Some(ImageKind::WEBP(Arc::new(data))),
+-                    Some(ImageFormat::SVG) => load_sub_svg(&data, opts),
+-                    _ => {
+-                        log::warn!("'{}' is not a PNG, JPEG, GIF, WebP or SVG(Z) image.", href);
+-                        None
+-                    }
+-                }
+-            } else {
+-                log::warn!("'{}' is not a path to an image.", href);
+-                None
+-            }
+-        })
++        Box::new(|_, _| None)
+--- a/crates/usvg/src/parser/mod.rs
++++ b/crates/usvg/src/parser/mod.rs
+@@ -24,0 +25,2 @@
++pub mod policy;
++pub use policy::guarded_document;
+@@ -30,0 +33,11 @@
++    /// A reference was rejected before resource resolution.
++    ForbiddenReference,
++    /// A forbidden reference with bounded, non-sensitive location metadata.
++    ForbiddenReferenceAt {
++        reference_class: &'static str,
++        location: &'static str,
++    },
++    /// An inline URI or CSS resource value is malformed.
++    MalformedReference,
++    /// Inline resource recursion or decoded bytes exceed the fixed budget.
++    ReferenceLimit,
+@@ -62,0 +76,5 @@
++            Error::ForbiddenReference | Error::ForbiddenReferenceAt { .. } => {
++                write!(f, "forbidden SVG reference")
++            }
++            Error::MalformedReference => write!(f, "malformed SVG reference"),
++            Error::ReferenceLimit => write!(f, "SVG reference limit exceeded"),
+@@ -146,0 +165,11 @@
++                cluster_candidates: opt.font_resolver.cluster_candidates.as_ref().map(|f| {
++                    Box::new(
++                        move |font: &crate::Font, db: &mut std::sync::Arc<fontdb::Database>| {
++                            f(font, db)
++                        },
++                    ) as _
++                }),
++                cluster_result: Box::new(|font, text, id| {
++                    (opt.font_resolver.cluster_result)(font, text, id)
++                }),
++                missing_glyph: Box::new(|c| (opt.font_resolver.missing_glyph)(c)),
+@@ -160,7 +189 @@
+-        let xml_opt = roxmltree::ParsingOptions {
+-            allow_dtd: true,
+-            ..Default::default()
+-        };
+-
+-        let doc =
+-            roxmltree::Document::parse_with_options(text, xml_opt).map_err(Error::ParsingFailed)?;
++        let doc = guarded_document(text)?;
+@@ -172,0 +196,4 @@
++        policy::check_document(doc)?;
++        if let Some(css) = &opt.style_sheet {
++            policy::check_css(css)?;
++        }
+--- a/crates/usvg/src/parser/options.rs
++++ b/crates/usvg/src/parser/options.rs
+@@ -13,0 +14,2 @@
++    /// Explicit viewport supplied by the embedding caller.
++    pub intrinsic_size: Option<Size>,
+@@ -105,0 +108 @@
++            intrinsic_size: None,
+--- /dev/null
++++ b/crates/usvg/src/parser/policy.rs
+@@ -0,0 +1,151 @@
++//! Claricle embedding policy. Runs before conversion, including unused definitions.
++use super::Error;
++use cssparser::{ParseErrorKind, Parser, ParserInput, Token};
++
++const SVG_LIMIT: usize = 16 * 1024 * 1024;
++const REFERENCE_LIMIT: usize = 256 * 1024 * 1024;
++const NESTING_LIMIT: usize = 128;
++
++// Budgets belong to this parse, never to process-global resolver state.
++struct Budget { decoded: usize }
++
++pub fn guarded_document(text: &str) -> Result<roxmltree::Document<'_>, Error> {
++    document(text, &mut Budget { decoded: 0 }, 0)
++}
++
++fn document<'a>(text: &'a str, budget: &mut Budget, depth: usize) -> Result<roxmltree::Document<'a>, Error> {
++    if text.len() > SVG_LIMIT || depth > NESTING_LIMIT { return Err(Error::ReferenceLimit); }
++    let doc = roxmltree::Document::parse_with_options(text, roxmltree::ParsingOptions {
++        allow_dtd: false, ..Default::default()
++    }).map_err(|e| match e {
++        roxmltree::Error::DtdDetected => Error::ForbiddenReferenceAt { reference_class: "doctype", location: "document@doctype" },
++        _ => Error::ParsingFailed(e),
++    })?;
++    inspect_document(&doc, budget, depth)?;
++    Ok(doc)
++}
++
++pub fn check_document(doc: &roxmltree::Document) -> Result<(), Error> {
++    inspect_document(doc, &mut Budget { decoded: 0 }, 0)
++}
++
++fn inspect_document(doc: &roxmltree::Document, budget: &mut Budget, depth: usize) -> Result<(), Error> {
++    for node in doc.descendants().filter(|n| n.is_element()) {
++        for a in node.attributes() {
++            if a.name() == "href" || a.name() == "src" {
++                let location = match node.tag_name().name() {
++                    "image" => "image@href", "use" => "use@href",
++                    "feImage" => "feImage@href", "svg" => "svg@href",
++                    _ => "attribute@url",
++                };
++                check_uri_at(a.value(), budget, depth, location)?;
++            }
++            css(a.value(), budget, depth)?;
++        }
++        if node.tag_name().name() == "style" {
++            for n in node.children().filter(|n| n.is_text()) { css_at(n.text().unwrap_or(""), budget, depth, "style@url")?; }
++        }
++    }
++    Ok(())
++}
++
++fn check_uri(value: &str, budget: &mut Budget, depth: usize) -> Result<(), Error> {
++    check_uri_at(value, budget, depth, "attribute@url")
++}
++
++fn check_uri_at(value: &str, budget: &mut Budget, depth: usize, location: &'static str) -> Result<(), Error> {
++    let value = value.trim();
++    if value.starts_with('#') && value.len() > 1 { return Ok(()); }
++    if !value.starts_with("data:") {
++        let lower = value.to_ascii_lowercase();
++        let reference_class = if lower.starts_with("file:") { "file" }
++            else if lower.starts_with("http:") || lower.starts_with("https:") || lower.starts_with("//") { "network" }
++            else if lower.starts_with('/') { "absolute" }
++            else if lower.contains(':') { "scheme" } else { "relative" };
++        return Err(Error::ForbiddenReferenceAt { reference_class, location });
++    }
++    let url = data_url::DataUrl::process(value).map_err(|_| Error::MalformedReference)?;
++    let (bytes, _) = url.decode_to_vec().map_err(|_| Error::MalformedReference)?;
++    budget.decoded = budget.decoded.checked_add(bytes.len()).ok_or(Error::ReferenceLimit)?;
++    if budget.decoded > REFERENCE_LIMIT { return Err(Error::ReferenceLimit); }
++    let mime = url.mime_type();
++    let looks_like_xml = bytes.iter().find(|b| !b.is_ascii_whitespace()) == Some(&b'<');
++    if (mime.type_ == "image" && mime.subtype == "svg+xml") || looks_like_xml {
++        let text = std::str::from_utf8(&bytes).map_err(|_| Error::NotAnUtf8Str)?;
++        document(text, budget, depth + 1)?;
++    }
++    Ok(())
++}
++
++pub fn check_css(text: &str) -> Result<(), Error> {
++    css(text, &mut Budget { decoded: 0 }, 0)
++}
++
++fn css(text: &str, budget: &mut Budget, depth: usize) -> Result<(), Error> {
++    css_at(text, budget, depth, "attribute@url")
++}
++
++fn css_at(text: &str, budget: &mut Budget, depth: usize, location: &'static str) -> Result<(), Error> {
++    tokens(&mut Parser::new(&mut ParserInput::new(text)), budget, depth, location)
++}
++
++fn tokens(p: &mut Parser<'_, '_>, budget: &mut Budget, depth: usize, location: &'static str) -> Result<(), Error> {
++    if depth > NESTING_LIMIT { return Err(Error::ReferenceLimit); }
++    while let Ok(token) = p.next_including_whitespace_and_comments().cloned() {
++        match token {
++            Token::AtKeyword(ref name) if name.eq_ignore_ascii_case("import") => return Err(Error::ForbiddenReferenceAt { reference_class: "css_import", location: "style@import" }),
++            Token::UnquotedUrl(ref value) => check_uri_at(value, budget, depth, location)?,
++            Token::BadUrl(_) => return Err(Error::MalformedReference),
++            Token::Function(ref name) if name.eq_ignore_ascii_case("url") => {
++                p.parse_nested_block(|p| {
++                    let value = p.expect_string()?.to_string();
++                    check_uri_at(&value, budget, depth, location).map_err(|e| p.new_custom_error(e))?;
++                    p.expect_exhausted()?;
++                    Ok(())
++                }).map_err(css_error)?;
++            }
++            Token::Function(_) | Token::ParenthesisBlock | Token::SquareBracketBlock | Token::CurlyBracketBlock => {
++                p.parse_nested_block(|p| tokens(p, budget, depth + 1, location).map_err(|e| p.new_custom_error(e)))
++                    .map_err(css_error)?;
++            }
++            _ => {}
++        }
++    }
++    Ok(())
++}
++
++fn css_error(e: cssparser::ParseError<'_, Error>) -> Error {
++    match e.kind { ParseErrorKind::Custom(e) => e, _ => Error::MalformedReference }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    #[test] fn guards_original_xml() {
++        for s in ["<svg href='file:///tmp/x'/>", "<svg style='fill:u\\72l(https://x)'/>", "<!DOCTYPE svg><svg/>", "<svg><style>@\\69mport 'x';</style></svg>", "<svg><defs><image href='https://x'/></defs></svg>", "<svg href='#safe' xmlns:xlink='http://www.w3.org/1999/xlink' xlink:href='file:///x'/>"] {
++            assert!(matches!(guarded_document(s), Err(Error::ForbiddenReferenceAt { .. })), "{s}");
++        }
++        assert!(guarded_document("<svg><!-- <!DOCTYPE svg> --><use href='#x'/></svg>").is_ok());
++    }
++    #[test] fn reports_sanitized_reference_details() {
++        assert!(matches!(guarded_document("<svg><image href='https://host/private'/></svg>"),
++            Err(Error::ForbiddenReferenceAt { reference_class: "network", location: "image@href" })));
++        assert!(matches!(guarded_document("<!DOCTYPE svg><svg/>"),
++            Err(Error::ForbiddenReferenceAt { reference_class: "doctype", location: "document@doctype" })));
++        assert!(matches!(guarded_document("<svg><style>rect{fill:url(file:///private)}</style></svg>"),
++            Err(Error::ForbiddenReferenceAt { reference_class: "file", location: "style@url" })));
++    }
++    #[test] fn preserves_nested_error_classes() {
++        assert!(matches!(guarded_document("<svg style='fill:var(--x,url(https://x))'/>"), Err(Error::ForbiddenReferenceAt { .. })));
++        assert!(matches!(guarded_document("<svg href='data:image/svg+xml,%3Csvg%20href=%22file:///secret%22/%3E'/>"), Err(Error::ForbiddenReferenceAt { .. })));
++        assert!(matches!(guarded_document("<svg href='data:image/png;base64,!'/>"), Err(Error::MalformedReference)));
++        assert!(guarded_document("<svg href='data:image/svg+xml,%3Csvg/%3E'/>").is_ok());
++    }
++    #[test] fn bounds_parser_recursion_and_resets_budget() {
++        let css = format!("{}url(#safe){}", "f(".repeat(130), ")".repeat(130));
++        assert!(matches!(check_css(&css), Err(Error::ReferenceLimit)));
++        let mut budget = Budget { decoded: REFERENCE_LIMIT };
++        assert!(matches!(check_uri("data:image/png;base64,YQ==", &mut budget, 0), Err(Error::ReferenceLimit)));
++        assert!(guarded_document("<svg href='data:image/png;base64,YQ=='/>").is_ok());
++    }
++}
+--- a/crates/usvg/src/text/layout.rs
++++ b/crates/usvg/src/text/layout.rs
+@@ -10,0 +11,2 @@
++use skrifa::prelude::Size;
++use skrifa::raw::TableProvider;
+@@ -13,2 +14,0 @@
+-use skrifa::prelude::Size;
+-use skrifa::raw::TableProvider;
+@@ -908 +908,6 @@
+-            None => continue,
++            None => {
++                if resolver.cluster_candidates.is_some() {
++                    (resolver.cluster_result)(&span.font, &chunk.text[span.start..span.end], None);
++                }
++                continue;
++            }
+@@ -912,0 +918 @@
++            span,
+@@ -1323,0 +1330 @@
++    span: &TextSpan,
+@@ -1344,0 +1352,116 @@
++    if let Some(candidates) = &resolver.cluster_candidates {
++        // Each candidate is shaped with the entire original context. Replace a
++        // whole logical cluster, never a glyph index or isolated Unicode scalar.
++        for id in candidates(&span.font, fontdb) {
++            if id == font.id {
++                continue;
++            }
++            let Some(candidate_font) = fontdb.load_font(id, variations).map(Arc::new) else {
++                continue;
++            };
++            let Some(candidate) = shape_text_with_font(
++                text,
++                candidate_font,
++                small_caps,
++                apply_kerning,
++                variations,
++                font_size,
++                font_optical_sizing,
++                fontdb,
++            ) else {
++                continue;
++            };
++            let missing: Vec<usize> = glyphs
++                .iter()
++                .filter(|g| {
++                    g.is_missing()
++                        && g.byte_idx.value() >= span.start
++                        && g.byte_idx.value() < span.end
++                })
++                .map(|g| g.byte_idx.value())
++                .collect();
++            for start in missing {
++                if !glyphs
++                    .iter()
++                    .any(|g| g.is_missing() && g.byte_idx.value() == start)
++                {
++                    continue;
++                }
++                // Grow to boundaries shared by both shaped sequences. This also
++                // covers ligatures and combining clusters of unequal glyph count.
++                let bounds = |gs: &[Glyph]| {
++                    let mut v: Vec<usize> = gs.iter().map(|g| g.byte_idx.value()).collect();
++                    v.push(text.len());
++                    v.sort_unstable();
++                    v.dedup();
++                    v
++                };
++                let base_bounds = bounds(&glyphs);
++                let candidate_bounds = bounds(&candidate);
++                let shared: Vec<usize> = base_bounds
++                    .into_iter()
++                    .filter(|n| candidate_bounds.contains(n))
++                    .collect();
++                let Some(lo) = shared.iter().copied().filter(|n| *n <= start).last() else {
++                    continue;
++                };
++                let Some(hi) = shared.iter().copied().find(|n| *n > start) else {
++                    continue;
++                };
++                if lo < span.start || hi > span.end {
++                    continue;
++                }
++                let replacement: Vec<Glyph> = candidate
++                    .iter()
++                    .filter(|g| g.byte_idx.value() >= lo && g.byte_idx.value() < hi)
++                    .cloned()
++                    .collect();
++                if replacement.is_empty() || replacement.iter().any(Glyph::is_missing) {
++                    continue;
++                }
++                let indices: Vec<usize> = glyphs
++                    .iter()
++                    .enumerate()
++                    .filter(|(_, g)| g.byte_idx.value() >= lo && g.byte_idx.value() < hi)
++                    .map(|(i, _)| i)
++                    .collect();
++                if let (Some(first), Some(last)) = (indices.first(), indices.last()) {
++                    if last - first + 1 != indices.len() {
++                        continue;
++                    }
++                    glyphs.splice(*first..=*last, replacement);
++                }
++            }
++        }
++        let mut reported = std::collections::HashSet::new();
++        let mut boundaries: Vec<usize> = glyphs.iter().map(|g| g.byte_idx.value()).collect();
++        boundaries.push(text.len());
++        boundaries.sort_unstable();
++        boundaries.dedup();
++        if glyphs.is_empty() && span.start < span.end {
++            (resolver.cluster_result)(&span.font, &text[span.start..span.end], None);
++        }
++        // Report in logical document order, rather than RTL visual glyph order.
++        for lo in boundaries
++            .iter()
++            .copied()
++            .filter(|n| *n >= span.start && *n < span.end)
++        {
++            let hi = boundaries
++                .iter()
++                .copied()
++                .find(|n| *n > lo)
++                .unwrap_or(text.len())
++                .min(span.end);
++            let cluster: Vec<&Glyph> = glyphs.iter().filter(|g| g.byte_idx.value() == lo).collect();
++            let id = cluster
++                .first()
++                .filter(|_| cluster.iter().all(|g| !g.is_missing()))
++                .map(|g| g.font.id);
++            if reported.insert(lo) {
++                (resolver.cluster_result)(&span.font, &text[lo..hi], id);
++            }
++        }
++        return glyphs;
++    }
++
+@@ -1411,0 +1535 @@
++            (resolver.missing_glyph)(c);
+--- a/crates/usvg/src/text/mod.rs
++++ b/crates/usvg/src/text/mod.rs
+@@ -74,0 +75,8 @@
++    /// Ordered explicit candidates for cluster replacement. None retains upstream policy.
++    pub cluster_candidates: Option<
++        Box<dyn Fn(&Font, &mut Arc<fontdb::Database>) -> Vec<fontdb::ID> + Send + Sync + 'a>,
++    >,
++    /// Reports an unresolved or replaced complete logical cluster.
++    pub cluster_result: Box<dyn Fn(&Font, &str, Option<fontdb::ID>) + Send + Sync + 'a>,
++    /// Called for unresolved shaped scalar values.
++    pub missing_glyph: Box<dyn Fn(char) + Send + Sync + 'a>,
+@@ -86,0 +95,3 @@
++            cluster_candidates: None,
++            cluster_result: Box::new(|_, _, _| {}),
++            missing_glyph: Box::new(|_| {}),

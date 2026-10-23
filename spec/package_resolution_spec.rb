@@ -1,0 +1,96 @@
+# frozen_string_literal: true
+
+require "digest"
+require "fileutils"
+require "rubygems/package"
+require "tmpdir"
+require "yaml"
+require_relative "../lib/svgpng"
+require_relative "../lib/svgpng/release_set"
+require_relative "../lib/svgpng/package_resolution"
+
+RSpec.describe Svgpng::PackageResolution do
+  let(:root) { Dir.mktmpdir("svgpng-package-resolution-") }
+  let(:release_dir) { File.join(root, "staged") }
+  let(:manifest) { File.join(root, "checksums.yml") }
+  let(:destination) { File.join(root, "install") }
+
+  before do
+    FileUtils.mkdir_p(release_dir)
+    Svgpng::ReleaseSet::TARGETS.each { |target| build_fixture_gem(target) }
+    artifacts = Svgpng::ReleaseSet::TARGETS.map do |target|
+      filename = target == "ruby" ? "svgpng-0.1.0.gem" : "svgpng-0.1.0-#{target}.gem"
+      { "target" => target, "path" => filename,
+        "sha256" => Digest::SHA256.file(File.join(release_dir, filename)).hexdigest }
+    end
+    File.write(manifest, YAML.dump("schema_version" => 1, "version" => "0.1.0", "artifacts" => artifacts))
+  end
+
+  after { FileUtils.rm_rf(root) }
+
+  it "resolves, selects, and installs the supported host's native package from the full set" do
+    result = described_class.verify!(directory: release_dir, manifest_path: manifest, destination: destination)
+    expected = described_class.send(:target_for, Gem::Platform.local)
+    expect(expected).not_to be_nil
+    expect(result[:platform]).to eq(expected)
+    expect(Dir.glob(File.join(destination, "specifications", "svgpng-0.1.0-*.gemspec")).length).to eq(1)
+  end
+
+  it "rejects an incomplete staged set before installation" do
+    File.delete(File.join(release_dir, "svgpng-0.1.0.gem"))
+    expect do
+      described_class.verify!(directory: release_dir, manifest_path: manifest, destination: destination)
+    end.to raise_error(described_class::VerificationError, /missing:/)
+    expect(File).not_to exist(destination)
+  end
+
+  it "resolves and installs the Ruby shell on an unsupported simulated host" do
+    unsupported = Gem::Platform.new("universal-unsupportedos")
+    allow(Gem::Platform).to receive(:local).and_return(unsupported)
+    allow(Gem).to receive(:platforms).and_return([Gem::Platform::RUBY, unsupported])
+
+    result = described_class.verify!(directory: release_dir, manifest_path: manifest, destination: destination)
+
+    expect(result[:platform]).to eq("ruby")
+    expect(Dir.glob(File.join(destination, "gems", "svgpng-0.1.0", "**", "native", "**"))).to be_empty
+    expect(Dir.glob(File.join(destination, "specifications", "svgpng-0.1.0.gemspec")).length).to eq(1)
+  end
+
+  def build_fixture_gem(target)
+    platform = target == "ruby" ? Gem::Platform::RUBY : Gem::Platform.new(target)
+    source = File.join(root, "fixture-#{target}")
+    files = write_fixture_files(target, source)
+    spec = fixture_spec(platform, files)
+    filename = target == "ruby" ? "svgpng-0.1.0.gem" : "svgpng-0.1.0-#{target}.gem"
+    Dir.chdir(source) { Gem::Package.build(spec, false, false, File.join(release_dir, filename)) }
+  end
+
+  def write_fixture_files(target, source)
+    FileUtils.mkdir_p(File.join(source, "lib"))
+    File.write(File.join(source, "lib", "svgpng.rb"), "# synthetic resolution fixture; no renderer\n")
+    return ["lib/svgpng.rb"] if target == "ruby"
+
+    path = "lib/svgpng/native/#{target}/svgpng.#{fixture_extension(target)}"
+    FileUtils.mkdir_p(File.dirname(File.join(source, path)))
+    File.binwrite(File.join(source, path), "synthetic package fixture; not a native binary")
+    ["lib/svgpng.rb", path]
+  end
+
+  def fixture_extension(target)
+    return "dylib" if target.include?("darwin")
+    return "dll" if target.include?("mingw")
+
+    "so"
+  end
+
+  def fixture_spec(platform, files)
+    Gem::Specification.new do |gem|
+      { name: "svgpng", version: "0.1.0", platform: platform,
+        summary: "Synthetic package resolution fixture", authors: ["Spec"],
+        license: "MIT", homepage: "https://example.invalid/svgpng-resolution-fixture",
+        files: files, require_paths: ["lib"], required_ruby_version: ">= 3.2" }.each do |key, value|
+        gem.public_send("#{key}=", value)
+      end
+    end
+  end
+end
