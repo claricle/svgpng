@@ -4,7 +4,10 @@ RSpec.describe Svgpng::RawInput do
   it "rejects declarations before any XML parser can expand entities" do
     ["<!DOCTYPE svg><svg/>", '<!DOCTYPE svg SYSTEM "file:///private/secret"><svg/>',
      '<!DOCTYPE svg [<!ENTITY a "expanded">]><svg>&a;</svg>'].each do |svg|
-      expect { described_class.validate!(svg) }.to raise_error(Svgpng::ForbiddenReferenceError)
+      expect { described_class.validate!(svg) }.to raise_error(Svgpng::ForbiddenReferenceError) do |error|
+        expect(error.reference_class).to eq("doctype")
+        expect(error.location).to eq("document@doctype")
+      end
     end
   end
 

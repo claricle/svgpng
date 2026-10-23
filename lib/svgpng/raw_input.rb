@@ -31,7 +31,10 @@ module Svgpng
       return closing(text, "]]>", opening + 9) if text[opening, 9] == "<![CDATA["
       return closing(text, "?>", opening + 2) if text[opening, 2] == "<?"
       if text[opening, 10].match?(/\A<!DOCTYPE(?:\s|\[|>)/)
-        raise ForbiddenReferenceError, "XML DOCTYPE declarations are forbidden"
+        raise ForbiddenReferenceError.new(
+          "XML DOCTYPE declarations are forbidden",
+          reference_class: "doctype", location: "document@doctype"
+        )
       end
 
       opening + 1
