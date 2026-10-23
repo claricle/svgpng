@@ -44,6 +44,18 @@ RSpec.describe Svgpng::PackageResolution do
     expect(File).not_to exist(destination)
   end
 
+  it "resolves and installs the Ruby shell on an unsupported simulated host" do
+    unsupported = Gem::Platform.new("universal-unsupportedos")
+    allow(Gem::Platform).to receive(:local).and_return(unsupported)
+    allow(Gem).to receive(:platforms).and_return([Gem::Platform::RUBY, unsupported])
+
+    result = described_class.verify!(directory: release_dir, manifest_path: manifest, destination: destination)
+
+    expect(result[:platform]).to eq("ruby")
+    expect(Dir.glob(File.join(destination, "gems", "svgpng-0.1.0", "**", "native", "**"))).to be_empty
+    expect(Dir.glob(File.join(destination, "specifications", "svgpng-0.1.0.gemspec")).length).to eq(1)
+  end
+
   def build_fixture_gem(target)
     platform = target == "ruby" ? Gem::Platform::RUBY : Gem::Platform.new(target)
     source = File.join(root, "fixture-#{target}")

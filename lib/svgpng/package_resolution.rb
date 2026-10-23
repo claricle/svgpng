@@ -87,8 +87,6 @@ module Svgpng
 
     def self.install_local(repository, destination)
       target = target_for(Gem::Platform.local)
-      raise VerificationError, "no supported native package for local platform #{Gem::Platform.local}" unless target
-
       source = Gem::Source.new("file://#{File.realpath(repository)}")
       install_resolved(source, repository, destination, target)
     rescue Gem::Exception, IOError, SystemCallError => e
@@ -115,16 +113,20 @@ module Svgpng
     private_class_method :install_selected_package
 
     def self.verify_selected_target!(platform, target)
-      return if platform.to_s == target
+      return if target.nil? && platform == Gem::Platform::RUBY
+      return if target && platform.to_s == target
 
-      raise VerificationError, "RubyGems selected #{platform}; supported local target is #{target}"
+      expected = target || "Ruby shell for unsupported host"
+      raise VerificationError, "RubyGems selected #{platform}; expected #{expected}"
     end
     private_class_method :verify_selected_target!
 
     def self.verify_installed_target!(platform, target)
-      return if platform.to_s == target
+      return if target.nil? && platform == Gem::Platform::RUBY
+      return if target && platform.to_s == target
 
-      raise VerificationError, "installed platform #{platform} does not match supported local target #{target}"
+      expected = target || "Ruby shell for unsupported host"
+      raise VerificationError, "installed platform #{platform} does not match expected #{expected}"
     end
     private_class_method :verify_installed_target!
 
