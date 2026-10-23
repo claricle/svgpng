@@ -172,8 +172,8 @@ module Svgpng
       def reference_error_details(detail)
         reference_class = detail["reference_class"]
         location = detail["location"]
-        classes = %w[relative absolute file network scheme css_import]
-        locations = %w[image@href use@href feImage@href svg@href style@url style@import attribute@url]
+        classes = %w[relative absolute file network scheme css_import doctype]
+        locations = %w[image@href use@href feImage@href svg@href style@url style@import attribute@url document@doctype]
         { reference_class: classes.include?(reference_class) ? reference_class : nil,
           location: locations.include?(location) ? location : nil }
       end

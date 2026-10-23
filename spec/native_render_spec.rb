@@ -162,6 +162,16 @@ RSpec.describe Svgpng::Native::RenderBinding do
     expect(releases.call).to eq(1)
   end
 
+  it "reports a DTD rejection using structural identifiers" do
+    native_failure(7, "reference_class" => "doctype", "location" => "document@doctype") do
+      expect { library.root_attributes("<svg/>") }.to raise_error(Svgpng::ForbiddenReferenceError) { |error|
+        expect(error.reference_class).to eq("doctype")
+        expect(error.location).to eq("document@doctype")
+      }
+    end
+    expect(releases.call).to eq(1)
+  end
+
   it "discards malformed optional family and scalar fields" do
     [nil, [], { "requested_family" => "bad\nfamily", "scalars" => [0xD800] },
      { "requested_family" => "x" * 1025, "scalars" => [0x110000] },
