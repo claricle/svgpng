@@ -25,7 +25,7 @@ module Svgpng
       def root_attributes(source)
         renderer_call(source) do |input, output, _owned|
           status = render_functions.fetch(:root).call(input, source.bytesize, output.to_ptr)
-          check_render_status(status)
+          check_render_status(status, output)
           attributes = copy_diagnostics(output)
           unless attributes.is_a?(Hash) && attributes.keys.all?(String) && attributes.values.all?(String)
             raise NativeError, "Renderer returned invalid root attributes"
@@ -43,7 +43,7 @@ module Svgpng
           entries, count = render_fonts(fonts, owned)
           status = render_functions.fetch(:render).call(input, source.bytesize, entries, count,
                                                         options.to_ptr, output.to_ptr)
-          check_render_status(status)
+          check_render_status(status, output)
           unless output.pixels_length == layout.buffer_bytes
             raise NativeError, "Renderer returned an invalid pixel buffer length"
           end
@@ -129,10 +129,53 @@ module Svgpng
         [pointer, faces.length]
       end
 
-      def check_render_status(status)
+      def check_render_status(status, output)
         return if status.zero?
 
-        raise ERRORS.fetch(status, NativeError), "SVGPNG rendering failed (status #{status})"
+        error = ERRORS.fetch(status, NativeError)
+        details = render_error_details(status, output)
+        raise error.new("SVGPNG rendering failed (status #{status})", **details)
+      end
+
+      # Native prose and unknown fields never cross the public error boundary.
+      def render_error_details(status, output)
+        return {} unless [5, 6, 7].include?(status)
+
+        diagnostics = copy_diagnostics(output)
+        detail = diagnostics["error"] if diagnostics.is_a?(Hash)
+        return {} unless detail.is_a?(Hash)
+        return reference_error_details(detail) if status == 7
+
+        fields = { requested_family: error_family(detail["requested_family"]) }
+        fields[:scalars] = error_scalars(detail["scalars"]) if status == 6
+        fields
+      rescue Error
+        {} # Optional diagnostics cannot replace the native status classification.
+      end
+
+      def error_family(value)
+        return unless value.is_a?(String) && value.bytesize.between?(1, 1024) && value.valid_encoding?
+        return if /[[:cntrl:]]/.match?(value)
+
+        value
+      end
+
+      def error_scalars(value)
+        return unless value.is_a?(Array) && value.length <= 256
+        return unless value.all? do |scalar|
+          scalar.is_a?(Integer) && scalar.between?(0, 0x10FFFF) && !scalar.between?(0xD800, 0xDFFF)
+        end
+
+        value.uniq.sort
+      end
+
+      def reference_error_details(detail)
+        reference_class = detail["reference_class"]
+        location = detail["location"]
+        classes = %w[relative absolute file network scheme css_import]
+        locations = %w[image@href use@href feImage@href svg@href style@url style@import attribute@url]
+        { reference_class: classes.include?(reference_class) ? reference_class : nil,
+          location: locations.include?(location) ? location : nil }
       end
 
       def copy_diagnostics(output)

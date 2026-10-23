@@ -8,9 +8,39 @@ module Svgpng
   class FontError < InputError; end
   class FontMetadataError < FontError; end
   class DuplicateFontError < FontError; end
-  class MissingFamilyError < FontError; end
-  class MissingGlyphError < FontError; end
-  class ForbiddenReferenceError < InputError; end
+
+  # An unresolved requested family, optionally identified by native diagnostics.
+  class MissingFamilyError < FontError
+    attr_reader :requested_family
+
+    def initialize(message = nil, requested_family: nil)
+      @requested_family = requested_family&.dup&.freeze
+      super(message)
+    end
+  end
+
+  # Missing Unicode scalar values for an explicitly requested family.
+  class MissingGlyphError < FontError
+    attr_reader :requested_family, :scalars
+
+    def initialize(message = nil, requested_family: nil, scalars: nil)
+      @requested_family = requested_family&.dup&.freeze
+      @scalars = scalars&.dup&.freeze
+      super(message)
+    end
+  end
+
+  # A rejected reference, with structural identifiers rather than resource paths.
+  class ForbiddenReferenceError < InputError
+    attr_reader :reference_class, :location
+
+    def initialize(message = nil, reference_class: nil, location: nil)
+      @reference_class = reference_class&.dup&.freeze
+      @location = location&.dup&.freeze
+      super(message)
+    end
+  end
+
   class NativeError < Error; end
   class EncodingError < NativeError; end
 
