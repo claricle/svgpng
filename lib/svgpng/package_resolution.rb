@@ -101,11 +101,18 @@ module Svgpng
       raise VerificationError, "local full-set index did not resolve svgpng 0.1.0" unless request
 
       verify_selected_target!(request.spec.platform, target)
-      installed = install_package(package_path(repository, request.spec), destination)
-      verify_installed_target!(installed.platform, target)
+      installed = install_selected_package(repository, request.spec, destination, target)
       { name: installed.name, version: installed.version.to_s, platform: installed.platform.to_s }.freeze
     end
     private_class_method :install_resolved
+
+    def self.install_selected_package(repository, resolver_spec, destination, target)
+      package = package_path(repository, resolver_spec.spec)
+      installed = install_package(package, destination)
+      verify_installed_target!(installed.platform, target)
+      installed
+    end
+    private_class_method :install_selected_package
 
     def self.verify_selected_target!(platform, target)
       return if platform.to_s == target

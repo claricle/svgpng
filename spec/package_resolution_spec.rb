@@ -28,12 +28,12 @@ RSpec.describe Svgpng::PackageResolution do
 
   after { FileUtils.rm_rf(root) }
 
-  it "uses full-set RubyGems selection and fails closed on a platform mismatch" do
+  it "resolves, selects, and installs the supported host's native package from the full set" do
     result = described_class.verify!(directory: release_dir, manifest_path: manifest, destination: destination)
-    expected = Svgpng::Native.send(:compatible_target, Gem::Platform.local)
+    expected = described_class.send(:target_for, Gem::Platform.local)
+    expect(expected).not_to be_nil
     expect(result[:platform]).to eq(expected)
-  rescue described_class::VerificationError => e
-    expect(e.message).to match(/RubyGems selected|installed platform/)
+    expect(Dir.glob(File.join(destination, "specifications", "svgpng-0.1.0-*.gemspec")).length).to eq(1)
   end
 
   it "rejects an incomplete staged set before installation" do
