@@ -228,6 +228,22 @@ a release target. Apple framework and system-library flags are local linker
 inputs. Rust's reported native static-library requirements on the macOS build
 host were `-lSystem -lc -lm`; no Apple frameworks were reported.
 
+### Local macOS developer package
+
+`rake native:local_package` builds one temporary, developer-labeled
+`arm64-darwin` gem from the Ruby shell and an explicitly supplied `.dylib`.
+Set `SVGPNG_TEST_NATIVE_LIBRARY` to that built artifact,
+`SVGPNG_DEV_PACKAGE_DIR` to an empty directory below `/private/tmp`, and
+`SVGPNG_DEV_LABEL` to a short identifier for the build. The task rejects
+non-regular or symlinked inputs, inspects `otool -L`, and permits only the
+system runtime dependency; libpng and zlib must be statically linked. It stages
+the gem without modifying `lib/svgpng/native/`, checks its gem metadata and
+payload, installs it locally into an isolated `GEM_HOME`, and runs a 2-by-3
+render smoke test using only the installed gem. The package SHA-256 and
+diagnostic output are written beside the gem. This verifies one local package
+and installed API path; it is not release qualification, a published download
+check, or evidence for any other target.
+
 The initial package set is seven native gems and one shell gem, all at the same
 version, initially **0.1.0**:
 
