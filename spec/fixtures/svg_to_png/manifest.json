@@ -5,7 +5,66 @@
     "libpng": "1.6.59",
     "zlib": "1.3.2",
     "rust": "1.85.0",
-    "compatibility": "0.1.0; source and patch hashes pinned by vendor/manifest.yml"
+    "source": {
+      "upstream_commit": "68b14c4c3bccdb60344c777406486b54c36ec1a4",
+      "fork_commit": "822a9c8515772d6c910dc1103f5ef82fd81d43c0",
+      "patches": [
+        {
+          "path": "native/patches/resvg-0.48.1-claricle.patch",
+          "sha256": "4b21d158227f7379dd8111f6093c19fce36dfefc77c0466c07eaa0b8978aa732",
+          "apply_command": "git apply --unidiff-zero resvg-0.48.1-claricle.patch"
+        }
+      ],
+      "source_sha256": "05430799a4788d158c4d7a37fac327bb1bf4c58636ab80716650aad830bc2d7f",
+      "cargo_lock_sha256": "7a0b2feea700467a367436a1958b2fc0db4be1865d905d644d23745630c13b8b",
+      "archives": {
+        "resvg": {
+          "filename": "resvg-0.48.1.tar.xz",
+          "url": "https://github.com/linebender/resvg/releases/download/v0.48.1/resvg-0.48.1.tar.xz",
+          "api_asset": "https://api.github.com/repos/linebender/resvg/releases/assets/498966792",
+          "size_bytes": 13023916,
+          "sha256": "13ed5a2bae7a01156288ecae5bf944cf7d1c572742c19fc68027947a4d87294c",
+          "extracted_root": "resvg-0.48.1",
+          "path_validation": "no_absolute_or_parent_traversal_entries"
+        },
+        "libpng": {
+          "url": "https://api.github.com/repos/pnggroup/libpng/tarball/cd952f49f95bb27154ae77dbb103032d95f6e580",
+          "sha256": "7e148caf27025d7a38dfea58e1ed91d56a002a8c9d4f3375ff4eacba74c82863",
+          "extracted_root": "pnggroup-libpng-cd952f4"
+        },
+        "zlib": {
+          "url": "https://zlib.net/zlib-1.3.2.tar.gz",
+          "sha256": "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16",
+          "extracted_root": "zlib-1.3.2"
+        }
+      }
+    },
+    "artifact": {
+      "sha256": "83c2d558ab9b138e3193cd61a8597e1b7786019c30dee9eadbddf695ebe6c30a",
+      "bytes": 7600256
+    },
+    "build": {
+      "command": "SVGPNG_CARGO_HOME=/private/tmp/svgpng-rust/cargo SVGPNG_RUSTUP_HOME=/private/tmp/svgpng-rust/rustup SVGPNG_LIBPNG_PREFIX=/private/tmp/svgpng-encoder-deps/prefix/libpng SVGPNG_ZLIB_PREFIX=/private/tmp/svgpng-encoder-deps/prefix/zlib SVGPNG_RENDERER_OUTPUT=/private/tmp/svgpng-renderer-local/svgpng.dylib bundle exec rake native:build_renderer",
+      "toolchain": "Rust 1.85.0; Apple clang 17.0.0 (clang-1700.6.3.2); arm64-darwin25.5.0",
+      "declared": {
+        "minimum_rust_version": "1.85.0",
+        "rust_toolchain_used": "1.85.0",
+        "c_toolchain": "Apple clang 17.0.0 (clang-1700.6.3.2), arm64-apple-darwin25.5.0 local qualification",
+        "linker_flags": {
+          "arm64-darwin": [
+            "-lSystem",
+            "-lc",
+            "-lm"
+          ]
+        },
+        "binary_checksums": null,
+        "artifact_sizes": null,
+        "artifact_policy": "Binary checksums and sizes are recorded per target build; no cross-target qualification inferred from local build."
+      },
+      "ruby": "ruby 3.4.8 (2025-12-17 revision 995b59f666) +PRISM [arm64-darwin25]",
+      "platform": "arm64-darwin25"
+    },
+    "compatibility": "Initial 0.1.0 native renderer corpus; no published PNG compatibility baseline changes."
   },
   "encoding": {
     "bit_depth": 8,
