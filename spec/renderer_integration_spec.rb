@@ -89,6 +89,14 @@ if ENV["SVGPNG_TEST_NATIVE_LIBRARY"]
       expect(pixels(render_svg)).to eq([[[0, 0, 0, 0]] * 2])
     end
 
+    it "renders the maximum supported canvas dimension" do
+      result = render_svg('<rect width="32768" height="1" fill="#123456"/>', width: 32_768)
+      expect([result.width, result.height]).to eq([32_768, 1])
+      expect(pixels(result)).to eq([[[18, 52, 86, 255]] * 32_768])
+      expect(result.warnings).to eq([])
+      expect(result.font_manifest).to eq([])
+    end
+
     it "rejects oversized canvas requests and leaves subsequent renders usable" do
       [{ width: 32_769 }, { width: 8001, height: 8000 }, { scale: "32769" }].each do |profile|
         expect { render_svg(profile: profile) }.to raise_error(Svgpng::LimitError)
