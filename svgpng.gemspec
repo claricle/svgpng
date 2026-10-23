@@ -9,7 +9,8 @@ Gem::Specification.new do |spec|
   spec.summary = "Explicit-input SVG to PNG rendering boundary"
   spec.homepage = "https://github.com/claricle/svgpng"
   spec.required_ruby_version = ">= 3.2"
-  spec.files = Dir["lib/**/*.rb", "docs/**/*", "README.adoc"]
+  spec.files = Dir["lib/**/*.rb", "docs/**/*", "README.adoc", "vendor/manifest.yml",
+                   "vendor/rust-dependencies.json", "vendor/licenses/**/*"].select { |path| File.file?(path) }
   spec.require_paths = ["lib"]
   spec.metadata["rubygems_mfa_required"] = "true"
 end

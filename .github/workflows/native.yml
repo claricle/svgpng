@@ -1,0 +1,79 @@
+name: Seven native targets
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  targets:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: arm64-darwin, runner: macos-14, musl: false }
+          - { target: x86_64-darwin, runner: macos-15-intel, musl: false }
+          - { target: x86_64-linux, runner: ubuntu-22.04, musl: false }
+          - { target: aarch64-linux, runner: ubuntu-22.04-arm, musl: false }
+          - { target: x86_64-linux-musl, runner: ubuntu-22.04, musl: true }
+          - { target: aarch64-linux-musl, runner: ubuntu-22.04-arm, musl: true }
+          - { target: x64-mingw-ucrt, runner: windows-2022, musl: false }
+    uses: ./.github/workflows/golden.yml
+    with:
+      target: ${{ matrix.target }}
+      runner: ${{ matrix.runner }}
+      musl: ${{ matrix.musl }}
+  assemble:
+    needs: targets
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: candidate-*
+          path: downloaded
+      - name: Assemble seven gems and native-free Ruby shell
+        shell: bash
+        run: |
+          python3 -m unittest discover -s scripts/native -p 'test_*.py'
+          bundle exec rubocop scripts/native/*.rb svgpng.gemspec
+          mkdir release-set
+          find downloaded -name '*.gem' -exec cp '{}' release-set/ \;
+          ruby scripts/native/package.rb ruby - release-set
+          cp -R downloaded release-set/evidence
+          ruby scripts/native/assemble.rb release-set
+          SVGPNG_RELEASE_DIR="$PWD/release-set" SVGPNG_RELEASE_MANIFEST="$PWD/release-set/checksums.json" \
+            SVGPNG_RESOLUTION_DESTINATION="$RUNNER_TEMP/svgpng-resolution" bundle exec rake svgpng:verify_package_resolution
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: svgpng-0.1.0-eight-gem-candidate-set
+          path: |
+            release-set/*
+          if-no-files-found: error
+          retention-days: 14
+  resolution:
+    needs: assemble
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: arm64-darwin, runner: macos-14, musl: false }
+          - { target: x86_64-darwin, runner: macos-15-intel, musl: false }
+          - { target: x86_64-linux, runner: ubuntu-22.04, musl: false }
+          - { target: aarch64-linux, runner: ubuntu-22.04-arm, musl: false }
+          - { target: x86_64-linux-musl, runner: ubuntu-22.04, musl: true }
+          - { target: aarch64-linux-musl, runner: ubuntu-22.04-arm, musl: true }
+          - { target: x64-mingw-ucrt, runner: windows-2022, musl: false }
+    uses: ./.github/workflows/golden.yml
+    with:
+      target: ${{ matrix.target }}
+      runner: ${{ matrix.runner }}
+      musl: ${{ matrix.musl }}
+      resolution-only: true
