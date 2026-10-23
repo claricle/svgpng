@@ -108,7 +108,7 @@ def inspect(target, library):
             raise ValueError(f'MSVCRT closure is not UCRT-compatible: {imports}')
         if not any('ucrtbase' in name.lower() or 'api-ms-win-crt-' in name.lower() for name in imports):
             raise ValueError('missing UCRT runtime import proof')
-        allowed = re.compile(r'^(kernel32|ntdll|advapi32|bcrypt|userenv|ws2_32|shell32|ole32|synchronization|ucrtbase)\.dll$|^api-ms-win-', re.I)
+        allowed = re.compile(r'^(kernel32|ntdll|advapi32|bcrypt|bcryptprimitives|userenv|ws2_32|shell32|ole32|synchronization|ucrtbase)\.dll$|^api-ms-win-', re.I)
         if any(not allowed.search(name) for name in imports):
             raise ValueError(f'non-system DLL dependency: {imports}')
         if 'pei-x86-64' not in report:

@@ -63,9 +63,16 @@ class DependencyTests(unittest.TestCase):
 
 class ClosureTests(unittest.TestCase):
     def test_ucrt_closure_accepted(self):
-        report = 'pei-x86-64\nDLL Name: KERNEL32.dll\nDLL Name: ucrtbase.dll\n'
+        report = ('pei-x86-64\nDLL Name: KERNEL32.dll\nDLL Name: ucrtbase.dll\n'
+                  'DLL Name: bcryptprimitives.dll\nDLL Name: api-ms-win-core-synch-l1-2-0.dll\n')
         with patch('build.run', return_value=report):
             self.assertEqual(build.inspect('x64-mingw-ucrt', 'library'), report)
+
+    def test_ucrt_rejects_external_runtime_dll(self):
+        report = 'pei-x86-64\nDLL Name: ucrtbase.dll\nDLL Name: libgcc_s_seh-1.dll\n'
+        with patch('build.run', return_value=report):
+            with self.assertRaisesRegex(ValueError, 'non-system DLL'):
+                build.inspect('x64-mingw-ucrt', 'library')
 
     def test_msvcrt_rejected_even_when_ucrt_present(self):
         report = 'pei-x86-64\nDLL Name: ucrtbase.dll\nDLL Name: msvcrt.dll\n'
