@@ -47,33 +47,38 @@ RSpec.describe Svgpng::PackageResolution do
   def build_fixture_gem(target)
     platform = target == "ruby" ? Gem::Platform::RUBY : Gem::Platform.new(target)
     source = File.join(root, "fixture-#{target}")
-    FileUtils.mkdir_p(File.join(source, "lib"))
-    File.write(File.join(source, "lib", "svgpng.rb"), "# synthetic resolution fixture; no renderer\n")
-    files = ["lib/svgpng.rb"]
-    unless target == "ruby"
-      extension = if target.include?("darwin")
-                    "dylib"
-                  else
-                    (target.include?("mingw") ? "dll" : "so")
-                  end
-      path = "lib/svgpng/native/#{target}/svgpng.#{extension}"
-      FileUtils.mkdir_p(File.dirname(File.join(source, path)))
-      File.binwrite(File.join(source, path), "synthetic package fixture; not a native binary")
-      files << path
-    end
-    spec = Gem::Specification.new do |gem|
-      gem.name = "svgpng"
-      gem.version = "0.1.0"
-      gem.platform = platform
-      gem.summary = "Synthetic package resolution fixture"
-      gem.authors = ["Spec"]
-      gem.license = "MIT"
-      gem.homepage = "https://example.invalid/svgpng-resolution-fixture"
-      gem.files = files
-      gem.require_paths = ["lib"]
-      gem.required_ruby_version = ">= 3.2"
-    end
+    files = write_fixture_files(target, source)
+    spec = fixture_spec(platform, files)
     filename = target == "ruby" ? "svgpng-0.1.0.gem" : "svgpng-0.1.0-#{target}.gem"
     Dir.chdir(source) { Gem::Package.build(spec, false, false, File.join(release_dir, filename)) }
+  end
+
+  def write_fixture_files(target, source)
+    FileUtils.mkdir_p(File.join(source, "lib"))
+    File.write(File.join(source, "lib", "svgpng.rb"), "# synthetic resolution fixture; no renderer\n")
+    return ["lib/svgpng.rb"] if target == "ruby"
+
+    path = "lib/svgpng/native/#{target}/svgpng.#{fixture_extension(target)}"
+    FileUtils.mkdir_p(File.dirname(File.join(source, path)))
+    File.binwrite(File.join(source, path), "synthetic package fixture; not a native binary")
+    ["lib/svgpng.rb", path]
+  end
+
+  def fixture_extension(target)
+    return "dylib" if target.include?("darwin")
+    return "dll" if target.include?("mingw")
+
+    "so"
+  end
+
+  def fixture_spec(platform, files)
+    Gem::Specification.new do |gem|
+      { name: "svgpng", version: "0.1.0", platform: platform,
+        summary: "Synthetic package resolution fixture", authors: ["Spec"],
+        license: "MIT", homepage: "https://example.invalid/svgpng-resolution-fixture",
+        files: files, require_paths: ["lib"], required_ruby_version: ">= 3.2" }.each do |key, value|
+        gem.public_send("#{key}=", value)
+      end
+    end
   end
 end
