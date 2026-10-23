@@ -606,6 +606,66 @@
           }
         ]
       }
+    },
+    {
+      "svg": "maximum-width.svg",
+      "png": "maximum-width.png",
+      "profile": {},
+      "svg_sha256": "7beb85bf9d8a7847ed775fdef834e343cb092082efbe6ef904c5e50f9c87c7a2",
+      "png_sha256": "9cfa2b262a8c5c8a188f8eb3039acee7775a0e509e924bd76455bbb67335354f",
+      "expected": {
+        "width": 32768,
+        "height": 1,
+        "warnings": [],
+        "font_manifest": []
+      }
+    },
+    {
+      "svg": "geometry.svg",
+      "png": "height-only.png",
+      "profile": {
+        "height": 24
+      },
+      "svg_sha256": "29e2be5b85971803cc9091c92a81050e88dbcd5594c58bd1f1c146a108a991a2",
+      "png_sha256": "a1dc146a4e022dc36ca5945728a4a66535df09f86ced44fde46deebf92e0e9ce",
+      "expected": {
+        "width": 36,
+        "height": 24,
+        "warnings": [],
+        "font_manifest": []
+      }
+    },
+    {
+      "svg": "geometry.svg",
+      "png": "contain.png",
+      "profile": {
+        "width": 48,
+        "height": 48,
+        "background": "#336699"
+      },
+      "svg_sha256": "29e2be5b85971803cc9091c92a81050e88dbcd5594c58bd1f1c146a108a991a2",
+      "png_sha256": "f8aeef6f5c75b704763b82c63e66a8a2dbc99805d22eff26ed92e9943d342677",
+      "expected": {
+        "width": 48,
+        "height": 48,
+        "warnings": [],
+        "font_manifest": []
+      }
+    },
+    {
+      "svg": "geometry.svg",
+      "png": "scale-factor.png",
+      "profile": {
+        "scale": "1.5"
+      },
+      "svg_sha256": "29e2be5b85971803cc9091c92a81050e88dbcd5594c58bd1f1c146a108a991a2",
+      "png_sha256": "a1dc146a4e022dc36ca5945728a4a66535df09f86ced44fde46deebf92e0e9ce",
+      "expected": {
+        "width": 36,
+        "height": 24,
+        "warnings": [],
+        "font_manifest": []
+      }
     }
   ]
 }
