@@ -1,0 +1,87 @@
+name: Release qualified SVGPNG
+on:
+  pull_request:
+    paths: ['.github/workflows/release.yml', 'scripts/release/**', 'spec/release/**']
+  push:
+    paths: ['.github/workflows/release.yml', 'scripts/release/**', 'spec/release/**']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Verify the approved packages without publishing
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: svgpng-release
+  cancel-in-progress: false
+jobs:
+  checks:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - run: bundle exec rspec spec/release
+      - run: bundle exec rubocop scripts/release/*.rb spec/release
+  verify:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: checks
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - name: Verify fixed successful qualification provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir provenance
+          gh api repos/claricle/svgpng/actions/runs/39935972918 > provenance/run.json
+          gh api repos/claricle/svgpng/actions/artifacts/12495376361 > provenance/artifact.json
+          gh api 'repos/claricle/svgpng/actions/runs/39935972918/jobs?per_page=100' --jq '.jobs' > provenance/jobs.json
+          gh api repos/claricle/svgpng/commits/896faa05a9e0c3d96d17bf1a79b92e1c566bb0ce > provenance/commit.json
+          ruby scripts/release/qualified_set.rb provenance provenance
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          github-token: ${{ github.token }}
+          repository: claricle/svgpng
+          run-id: '39935972918'
+          artifact-ids: '12495376361'
+          merge-multiple: true
+          path: release-set
+      - run: ruby scripts/release/qualified_set.rb verify release-set
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: verified-release-set
+          path: |
+            release-set/*.gem
+            release-set/checksums.json
+          if-no-files-found: error
+          retention-days: 1
+  publish:
+    if: ${{ !inputs.dry_run }}
+    needs: verify
+    runs-on: ubuntu-22.04
+    # RubyGems publisher: claricle/svgpng, release.yml, environment empty.
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: verified-release-set
+          path: release-set
+      - run: ruby scripts/release/qualified_set.rb verify release-set
+      - uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a
+      - run: ruby scripts/release/qualified_set.rb publish release-set
