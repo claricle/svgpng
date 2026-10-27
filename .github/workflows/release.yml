@@ -43,17 +43,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir provenance
-          gh api repos/claricle/svgpng/actions/runs/39935972918 > provenance/run.json
-          gh api repos/claricle/svgpng/actions/artifacts/12495376361 > provenance/artifact.json
-          gh api 'repos/claricle/svgpng/actions/runs/39935972918/jobs?per_page=100' --jq '.jobs' > provenance/jobs.json
-          gh api repos/claricle/svgpng/commits/896faa05a9e0c3d96d17bf1a79b92e1c566bb0ce > provenance/commit.json
+          gh api repos/claricle/svgpng/actions/runs/40522909868 > provenance/run.json
+          gh api repos/claricle/svgpng/actions/artifacts/12743646083 > provenance/artifact.json
+          gh api 'repos/claricle/svgpng/actions/runs/40522909868/jobs?per_page=100' --jq '.jobs' > provenance/jobs.json
+          gh api repos/claricle/svgpng/commits/d73eaa45b671efe722ebf07682b248eee0aec79d > provenance/commit.json
           ruby scripts/release/qualified_set.rb provenance provenance
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           github-token: ${{ github.token }}
           repository: claricle/svgpng
-          run-id: '39935972918'
-          artifact-ids: '12495376361'
+          run-id: '40522909868'
+          artifact-ids: '12743646083'
           merge-multiple: true
           path: release-set
       - run: ruby scripts/release/qualified_set.rb verify release-set
