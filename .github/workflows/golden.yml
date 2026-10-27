@@ -8,6 +8,9 @@ on:
       runner:
         required: true
         type: string
+      ruby-version:
+        default: '3.3'
+        type: string
       resolution-only:
         default: false
         type: boolean
@@ -28,7 +31,7 @@ jobs:
       - uses: ruby/setup-ruby@v1
         if: ${{ !inputs.musl }}
         with:
-          ruby-version: '3.3'
+          ruby-version: ${{ inputs.ruby-version }}
           bundler-cache: true
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         if: inputs.resolution-only

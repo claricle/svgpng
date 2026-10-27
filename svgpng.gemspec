@@ -11,6 +11,7 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = ">= 3.2"
   spec.files = Dir["lib/**/*.rb", "docs/**/*", "README.adoc", "vendor/manifest.yml",
                    "vendor/rust-dependencies.json", "vendor/licenses/**/*"].select { |path| File.file?(path) }
+  spec.add_dependency "fiddle"
   spec.require_paths = ["lib"]
   spec.metadata["rubygems_mfa_required"] = "true"
 end

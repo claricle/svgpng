@@ -71,9 +71,11 @@ jobs:
           - { target: x86_64-linux-musl, runner: ubuntu-22.04, musl: true }
           - { target: aarch64-linux-musl, runner: ubuntu-22.04-arm, musl: true }
           - { target: x64-mingw-ucrt, runner: windows-2022, musl: false }
+          - { target: x86_64-linux, runner: ubuntu-22.04, musl: false, ruby: '4.0' }
     uses: ./.github/workflows/golden.yml
     with:
       target: ${{ matrix.target }}
       runner: ${{ matrix.runner }}
       musl: ${{ matrix.musl }}
       resolution-only: true
+      ruby-version: ${{ matrix.ruby || '3.3' }}

@@ -36,6 +36,25 @@ RSpec.describe Svgpng::PackageResolution do
     expect(Dir.glob(File.join(destination, "specifications", "svgpng-0.1.0-*.gemspec")).length).to eq(1)
   end
 
+  it "declares Fiddle as a runtime dependency for installs without default Fiddle" do
+    spec = Gem::Specification.load(File.expand_path("../svgpng.gemspec", __dir__))
+    expect(spec.runtime_dependencies.map(&:name)).to include("fiddle")
+  end
+
+  it "does not substitute the installed source checkout for a staged package" do
+    dependency = Gem::Resolver::DependencyRequest.new(Gem::Dependency.new("svgpng"), nil)
+    expect(described_class::InstalledDependencies.new.find_all(dependency)).to be_empty
+  end
+
+  it "rejects a staged package when its runtime dependency is unavailable" do
+    allow_any_instance_of(described_class::InstalledDependencies).to receive(:find_all).and_return([])
+
+    expect do
+      described_class.verify!(directory: release_dir, manifest_path: manifest, destination: destination)
+    end.to raise_error(described_class::VerificationError, /fiddle/)
+    expect(File).not_to exist(destination)
+  end
+
   it "rejects an incomplete staged set before installation" do
     File.delete(File.join(release_dir, "svgpng-0.1.0.gem"))
     expect do
@@ -85,6 +104,7 @@ RSpec.describe Svgpng::PackageResolution do
 
   def fixture_spec(platform, files)
     Gem::Specification.new do |gem|
+      gem.add_dependency "fiddle"
       { name: "svgpng", version: "0.1.0", platform: platform,
         summary: "Synthetic package resolution fixture", authors: ["Spec"],
         license: "MIT", homepage: "https://example.invalid/svgpng-resolution-fixture",
