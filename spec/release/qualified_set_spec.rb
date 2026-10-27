@@ -19,7 +19,7 @@ RSpec.describe Svgpng::QualifiedRelease do
     names = %w[targets resolution].flat_map do |phase|
       targets.map { |target| "#{phase} (#{target}, runner, false) / qualify" }
     end
-    (names + ["assemble"]).map { |name| { "name" => name, "conclusion" => "success" } }
+    (names + ["assemble", described_class::RUBY4_JOB]).map { |name| { "name" => name, "conclusion" => "success" } }
   end
   let(:commit) { { "commit" => { "tree" => { "sha" => described_class::TREE } } } }
 
@@ -59,6 +59,25 @@ RSpec.describe Svgpng::QualifiedRelease do
     jobs.first["conclusion"] = "failure"
     expect { described_class.verify_provenance!(run, artifact, jobs, commit) }
       .to raise_error(described_class::Error, /qualification jobs/)
+  end
+
+  it "rejects qualification without Ruby 4 installation proof" do
+    jobs.last["name"] = "resolution (x86_64-linux, ubuntu-22.04, false, 3.4) / qualify"
+    expect { described_class.verify_provenance!(run, artifact, jobs, commit) }
+      .to raise_error(described_class::Error, /missing Ruby 4 qualification/)
+  end
+
+  it "rejects failed Ruby 4 installation proof" do
+    jobs.last["conclusion"] = "failure"
+    expect { described_class.verify_provenance!(run, artifact, jobs, commit) }
+      .to raise_error(described_class::Error, /failed qualification jobs/)
+  end
+
+  it "requires the default Linux resolution alongside Ruby 4" do
+    job = jobs.find { |entry| entry["name"] == "resolution (x86_64-linux, runner, false) / qualify" }
+    job["name"] = "unrelated"
+    expect { described_class.verify_provenance!(run, artifact, jobs, commit) }
+      .to raise_error(described_class::Error, /missing resolution qualification for x86_64-linux/)
   end
 
   it "pins the approved manifest bytes" do

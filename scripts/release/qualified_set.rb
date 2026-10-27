@@ -7,11 +7,12 @@ require_relative "../../lib/svgpng/release_set"
 module Svgpng
   # Publishes only the immutable, previously qualified 0.1.0 set.
   module QualifiedRelease
-    RUN = 39_935_972_918
-    ARTIFACT = 12_495_376_361
-    SOURCE = "896faa05a9e0c3d96d17bf1a79b92e1c566bb0ce"
-    TREE = "04e3cad152acaf1ada71b5b0e67ec60a3a7deaa9"
-    MANIFEST_SHA = "d7561c29755a66c6f381d22c0bfdbdc3ac9e99b0bbb1c793beb0a988a808cf28"
+    RUN = 40_522_909_868
+    ARTIFACT = 12_743_646_083
+    SOURCE = "d73eaa45b671efe722ebf07682b248eee0aec79d"
+    TREE = "7b7a8ad8b84b465d477453423d794148e10f11b5"
+    MANIFEST_SHA = "368d1b3194ba4925b6bdf257562914b0dff9d526e59d54d548a7437ce311bf46"
+    RUBY4_JOB = "resolution (x86_64-linux, ubuntu-22.04, false, 4.0) / qualify"
     MANIFEST = File.expand_path("checksums.json", __dir__)
     class Error < StandardError; end
 
@@ -44,8 +45,13 @@ module Svgpng
     end
 
     def self.verify_job_names!(names)
-      assert!(names.length == 15 && names.uniq.length == 15, "incomplete qualification jobs")
+      assert!(names.length == 16 && names.uniq.length == 16, "incomplete qualification jobs")
       assert!(names.include?("assemble"), "missing assembly qualification")
+      assert!(names.include?(RUBY4_JOB), "missing Ruby 4 qualification")
+      verify_platform_names!(names.reject { |name| name == RUBY4_JOB })
+    end
+
+    def self.verify_platform_names!(names)
       %w[targets resolution].each do |phase|
         ReleaseSet::TARGETS.reject { |target| target == "ruby" }.each do |target|
           assert!(names.one? { |name| name.start_with?("#{phase} (#{target}, ") && name.end_with?(" / qualify") },
