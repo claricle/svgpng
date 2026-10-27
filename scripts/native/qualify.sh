@@ -16,7 +16,8 @@ ruby scripts/native/package.rb "$SVGPNG_TARGET" "$SVGPNG_TEST_NATIVE_LIBRARY" ca
 # Remove Bundler's source checkout activation for a genuinely isolated install.
 install_dir="$PWD/tmp/clean-install"
 mkdir -p "$install_dir"
-env -u RUBYOPT -u RUBYLIB -u BUNDLE_BIN_PATH -u BUNDLE_GEMFILE GEM_HOME="$install_dir" GEM_PATH="$install_dir" \
-  gem install --local --no-document --ignore-dependencies --install-dir "$install_dir" "candidate/svgpng-0.1.0-$SVGPNG_TARGET.gem"
-env -u RUBYOPT -u RUBYLIB -u BUNDLE_BIN_PATH -u BUNDLE_GEMFILE GEM_HOME="$install_dir" GEM_PATH="$install_dir" \
-  ruby scripts/native/smoke.rb "$SVGPNG_TARGET"
+smoke_gem_path="$(SVGPNG_SMOKE_INSTALL_DIR="$install_dir" bundle exec ruby -e 'puts [ENV.fetch("SVGPNG_SMOKE_INSTALL_DIR"), Gem.loaded_specs.fetch("fiddle").base_dir].join(File::PATH_SEPARATOR)')"
+env -u RUBYOPT -u RUBYLIB -u BUNDLE_BIN_PATH -u BUNDLE_GEMFILE GEM_HOME="$install_dir" GEM_PATH="$smoke_gem_path" \
+  gem install --local --no-document "candidate/svgpng-0.1.0-$SVGPNG_TARGET.gem"
+env -u RUBYOPT -u RUBYLIB -u BUNDLE_BIN_PATH -u BUNDLE_GEMFILE GEM_HOME="$install_dir" GEM_PATH="$smoke_gem_path" \
+  ruby scripts/native/smoke.rb "$SVGPNG_TARGET" "$install_dir"

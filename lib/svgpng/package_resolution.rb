@@ -16,6 +16,14 @@ module Svgpng
   module PackageResolution
     class VerificationError < StandardError; end
 
+    # Resolve dependencies from the installed bundle, but always select SVGPNG
+    # from the verified eight-package index rather than the source checkout.
+    class InstalledDependencies < Gem::Resolver::CurrentSet
+      def find_all(request)
+        request.name == "svgpng" ? [] : super
+      end
+    end
+
     def self.verify!(directory:, manifest_path:, destination:)
       verify_destination!(destination)
 
@@ -143,7 +151,8 @@ module Svgpng
 
     def self.resolve_full_set(source)
       activations = Gem::Resolver.new([Gem::Dependency.new("svgpng", "= 0.1.0")],
-                                      Gem::Resolver::IndexSet.new(source)).resolve
+                                      Gem::Resolver::ComposedSet.new(Gem::Resolver::IndexSet.new(source),
+                                                                     InstalledDependencies.new)).resolve
       activations.find { |activation| activation.spec.name == "svgpng" }
     end
     private_class_method :resolve_full_set
