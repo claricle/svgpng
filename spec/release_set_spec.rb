@@ -43,7 +43,7 @@ RSpec.describe Svgpng::ReleaseSet do
   end
 
   it "rejects an additional gem in the staged directory" do
-    File.binwrite(File.join(release_dir, "svgpng-0.1.0-extra.gem"), "extra")
+    File.binwrite(File.join(release_dir, "svgpng-0.1.1-extra.gem"), "extra")
 
     expect { described_class.verify!(directory: release_dir, manifest_path: manifest_path) }
       .to raise_error(described_class::VerificationError, /unexpected:/)
@@ -51,7 +51,7 @@ RSpec.describe Svgpng::ReleaseSet do
 
   it "rejects traversal paths in the manifest" do
     entries = artifact_entries
-    entries.first["path"] = "../svgpng-0.1.0-arm64-darwin.gem"
+    entries.first["path"] = "../svgpng-0.1.1-arm64-darwin.gem"
     save_manifest(entries)
 
     expect { described_class.verify!(directory: release_dir, manifest_path: manifest_path) }
@@ -82,7 +82,7 @@ RSpec.describe Svgpng::ReleaseSet do
     refresh_digest(entry)
 
     expect { described_class.verify!(directory: release_dir, manifest_path: manifest_path) }
-      .to raise_error(described_class::VerificationError, /metadata must be svgpng 0.1.0 for x86_64-linux/)
+      .to raise_error(described_class::VerificationError, /metadata must be svgpng 0.1.1 for x86_64-linux/)
   end
 
   it "rejects a native package with the wrong shared-library path" do
@@ -115,7 +115,7 @@ RSpec.describe Svgpng::ReleaseSet do
 
   def artifact_entries
     described_class::TARGETS.map do |target|
-      filename = target == "ruby" ? "svgpng-0.1.0.gem" : "svgpng-0.1.0-#{target}.gem"
+      filename = target == "ruby" ? "svgpng-0.1.1.gem" : "svgpng-0.1.1-#{target}.gem"
       { "target" => target, "path" => filename,
         "sha256" => Digest::SHA256.file(File.join(release_dir, filename)).hexdigest }
     end
@@ -126,7 +126,7 @@ RSpec.describe Svgpng::ReleaseSet do
   end
 
   def save_manifest(entries)
-    File.write(manifest_path, YAML.dump("schema_version" => 1, "version" => "0.1.0", "artifacts" => entries))
+    File.write(manifest_path, YAML.dump("schema_version" => 1, "version" => "0.1.1", "artifacts" => entries))
   end
 
   def refresh_digest(entry)
@@ -137,7 +137,7 @@ RSpec.describe Svgpng::ReleaseSet do
   # rubocop:disable-next Metrics/AbcSize, Metrics/MethodLength -- Builds a minimal multi-platform package fixture.
   def build_package(target, platform: target == "ruby" ? Gem::Platform::RUBY : Gem::Platform.new(target),
                     native_path: nil, extensions: [])
-    filename = target == "ruby" ? "svgpng-0.1.0.gem" : "svgpng-0.1.0-#{target}.gem"
+    filename = target == "ruby" ? "svgpng-0.1.1.gem" : "svgpng-0.1.1-#{target}.gem"
     source = File.join(root, "source-#{target}")
     FileUtils.mkdir_p(File.join(source, "lib"))
     files = ["lib/svgpng.rb"]
@@ -160,7 +160,7 @@ RSpec.describe Svgpng::ReleaseSet do
 
     spec = Gem::Specification.new do |gem_spec|
       gem_spec.name = "svgpng"
-      gem_spec.version = "0.1.0"
+      gem_spec.version = "0.1.1"
       gem_spec.platform = platform
       gem_spec.summary = "Local release verifier fixture"
       gem_spec.authors = ["Spec"]

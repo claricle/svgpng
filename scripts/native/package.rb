@@ -40,7 +40,7 @@ Dir.mktmpdir("svgpng-candidate-") do |stage|
     FileUtils.cp(library, path)
     specification.files << relative
   end
-  filename = target == "ruby" ? "svgpng-0.1.0.gem" : "svgpng-0.1.0-#{target}.gem"
+  filename = target == "ruby" ? "svgpng-0.1.1.gem" : "svgpng-0.1.1-#{target}.gem"
   package = File.join(destination, filename)
   Dir.chdir(stage) { Gem::Package.build(specification, false, false, package) }
   Svgpng::ReleaseSet::Package.new(package, target).verify!

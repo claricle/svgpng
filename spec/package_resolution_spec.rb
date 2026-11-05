@@ -19,11 +19,11 @@ RSpec.describe Svgpng::PackageResolution do
     FileUtils.mkdir_p(release_dir)
     Svgpng::ReleaseSet::TARGETS.each { |target| build_fixture_gem(target) }
     artifacts = Svgpng::ReleaseSet::TARGETS.map do |target|
-      filename = target == "ruby" ? "svgpng-0.1.0.gem" : "svgpng-0.1.0-#{target}.gem"
+      filename = target == "ruby" ? "svgpng-0.1.1.gem" : "svgpng-0.1.1-#{target}.gem"
       { "target" => target, "path" => filename,
         "sha256" => Digest::SHA256.file(File.join(release_dir, filename)).hexdigest }
     end
-    File.write(manifest, YAML.dump("schema_version" => 1, "version" => "0.1.0", "artifacts" => artifacts))
+    File.write(manifest, YAML.dump("schema_version" => 1, "version" => "0.1.1", "artifacts" => artifacts))
   end
 
   after { FileUtils.rm_rf(root) }
@@ -33,7 +33,7 @@ RSpec.describe Svgpng::PackageResolution do
     expected = described_class.send(:target_for, Gem::Platform.local)
     expect(expected).not_to be_nil
     expect(result[:platform]).to eq(expected)
-    expect(Dir.glob(File.join(destination, "specifications", "svgpng-0.1.0-*.gemspec")).length).to eq(1)
+    expect(Dir.glob(File.join(destination, "specifications", "svgpng-0.1.1-*.gemspec")).length).to eq(1)
   end
 
   it "declares Fiddle as a runtime dependency for installs without default Fiddle" do
@@ -56,7 +56,7 @@ RSpec.describe Svgpng::PackageResolution do
   end
 
   it "rejects an incomplete staged set before installation" do
-    File.delete(File.join(release_dir, "svgpng-0.1.0.gem"))
+    File.delete(File.join(release_dir, "svgpng-0.1.1.gem"))
     expect do
       described_class.verify!(directory: release_dir, manifest_path: manifest, destination: destination)
     end.to raise_error(described_class::VerificationError, /missing:/)
@@ -71,8 +71,8 @@ RSpec.describe Svgpng::PackageResolution do
     result = described_class.verify!(directory: release_dir, manifest_path: manifest, destination: destination)
 
     expect(result[:platform]).to eq("ruby")
-    expect(Dir.glob(File.join(destination, "gems", "svgpng-0.1.0", "**", "native", "**"))).to be_empty
-    expect(Dir.glob(File.join(destination, "specifications", "svgpng-0.1.0.gemspec")).length).to eq(1)
+    expect(Dir.glob(File.join(destination, "gems", "svgpng-0.1.1", "**", "native", "**"))).to be_empty
+    expect(Dir.glob(File.join(destination, "specifications", "svgpng-0.1.1.gemspec")).length).to eq(1)
   end
 
   def build_fixture_gem(target)
@@ -80,7 +80,7 @@ RSpec.describe Svgpng::PackageResolution do
     source = File.join(root, "fixture-#{target}")
     files = write_fixture_files(target, source)
     spec = fixture_spec(platform, files)
-    filename = target == "ruby" ? "svgpng-0.1.0.gem" : "svgpng-0.1.0-#{target}.gem"
+    filename = target == "ruby" ? "svgpng-0.1.1.gem" : "svgpng-0.1.1-#{target}.gem"
     Dir.chdir(source) { Gem::Package.build(spec, false, false, File.join(release_dir, filename)) }
   end
 
@@ -105,7 +105,7 @@ RSpec.describe Svgpng::PackageResolution do
   def fixture_spec(platform, files)
     Gem::Specification.new do |gem|
       gem.add_dependency "fiddle"
-      { name: "svgpng", version: "0.1.0", platform: platform,
+      { name: "svgpng", version: "0.1.1", platform: platform,
         summary: "Synthetic package resolution fixture", authors: ["Spec"],
         license: "MIT", homepage: "https://example.invalid/svgpng-resolution-fixture",
         files: files, require_paths: ["lib"], required_ruby_version: ">= 3.2" }.each do |key, value|
