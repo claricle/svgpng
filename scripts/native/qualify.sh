@@ -18,6 +18,6 @@ install_dir="$PWD/tmp/clean-install"
 mkdir -p "$install_dir"
 smoke_gem_path="$(SVGPNG_SMOKE_INSTALL_DIR="$install_dir" bundle exec ruby -e 'puts [ENV.fetch("SVGPNG_SMOKE_INSTALL_DIR"), Gem.loaded_specs.fetch("fiddle").base_dir].join(File::PATH_SEPARATOR)')"
 env -u RUBYOPT -u RUBYLIB -u BUNDLE_BIN_PATH -u BUNDLE_GEMFILE GEM_HOME="$install_dir" GEM_PATH="$smoke_gem_path" \
-  gem install --local --no-document "candidate/svgpng-0.1.0-$SVGPNG_TARGET.gem"
+  gem install --local --no-document "candidate/svgpng-0.1.1-$SVGPNG_TARGET.gem"
 env -u RUBYOPT -u RUBYLIB -u BUNDLE_BIN_PATH -u BUNDLE_GEMFILE GEM_HOME="$install_dir" GEM_PATH="$smoke_gem_path" \
   ruby scripts/native/smoke.rb "$SVGPNG_TARGET" "$install_dir"
