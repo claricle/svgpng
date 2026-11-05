@@ -68,11 +68,13 @@ module Svgpng
       ReleaseSet.verify!(directory: directory, manifest_path: MANIFEST)
     end
 
-    # A 404 alone means absent. Authentication/network/server failures must stop publication.
+    # RubyGems' download store answers 403 (S3 ACL semantics), not 404, for
+    # absent keys; both mean unpublished. Authentication/network/server
+    # failures must stop publication.
     def self.remote_digest(path)
       uri = URI("https://rubygems.org/downloads/#{File.basename(path)}")
       response = Net::HTTP.get_response(uri)
-      return nil if response.is_a?(Net::HTTPNotFound)
+      return nil if response.is_a?(Net::HTTPNotFound) || response.is_a?(Net::HTTPForbidden)
 
       assert!(response.is_a?(Net::HTTPSuccess), "RubyGems download failed: #{response.code}")
       Digest::SHA256.hexdigest(response.body)
