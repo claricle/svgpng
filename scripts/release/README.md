@@ -1,13 +1,13 @@
-# Publishing the qualified SVGPNG 0.1.0 set
+# Publishing the qualified SVGPNG 0.1.1 set
 
 Run `.github/workflows/release.yml` on `main` with `dry_run: true` first.
-This verifies qualification run 40522909868 and artifact 12743646083, then
+This verifies qualification run 41950879623 and artifact 13380623531, then
 checks the fixed approved manifest and all eight immutable gem files using
 `Svgpng::ReleaseSet`. No build or version change occurs. The source tree is
-7b7a8ad8b84b465d477453423d794148e10f11b5.
+2eb2388d93079b11fc8eae280e55101b9a70e6f4.
 Qualification includes all seven native builds, package assembly, platform
 installation checks, and Ruby 4 installation with the declared Fiddle dependency.
-The artifact expires on 2026-11-10; expiry is a failure, never a
+The artifact expires on 2026-11-19; expiry is a failure, never a
 reason to rebuild or select a different artifact automatically.
 
 For the authorized release, dispatch with `dry_run: false`. RubyGems must have
