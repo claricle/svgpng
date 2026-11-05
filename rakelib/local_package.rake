@@ -10,7 +10,7 @@ require "tmpdir"
 # Builds and verifies one explicitly supplied, local development package.
 # rubocop:disable-next Metrics/ModuleLength -- cohesive orchestration task with no public runtime API.
 module SvgpngLocalPackage
-  GEM_NAME = "svgpng-0.1.0-arm64-darwin.gem"
+  GEM_NAME = "svgpng-0.1.1-arm64-darwin.gem"
   PLATFORM = "arm64-darwin"
   LIBRARY_RELATIVE_PATH = "lib/svgpng/native/#{PLATFORM}/svgpng.dylib".freeze
   SYSTEM_LIBRARY = "/usr/lib/libSystem.B.dylib"
@@ -152,7 +152,7 @@ module SvgpngLocalPackage
   end
 
   def metadata_matches?(spec, label)
-    spec.name == "svgpng" && spec.version.to_s == "0.1.0" && spec.platform == Gem::Platform.new(PLATFORM) &&
+    spec.name == "svgpng" && spec.version.to_s == "0.1.1" && spec.platform == Gem::Platform.new(PLATFORM) &&
       spec.metadata["svgpng.dev_only"] == "true" && spec.metadata["svgpng.dev_label"] == label
   end
 

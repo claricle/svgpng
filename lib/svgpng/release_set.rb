@@ -6,15 +6,15 @@ require "tmpdir"
 require "yaml"
 
 module Svgpng
-  # Validates the staged local 0.1.0 package set without mutating it.
+  # Validates the staged local 0.1.1 package set without mutating it.
   module ReleaseSet
-    VERSION = "0.1.0"
+    VERSION = "0.1.1"
     TARGETS = %w[
       arm64-darwin x86_64-darwin x86_64-linux aarch64-linux
       x86_64-linux-musl aarch64-linux-musl x64-mingw-ucrt ruby
     ].freeze
     TARGET_PATTERN = TARGETS.reject { |target| target == "ruby" }.join("|").freeze
-    GEM_NAME = /\Asvgpng-0\.1\.0(?:-(?:#{TARGET_PATTERN}))?\.gem\z/
+    GEM_NAME = /\Asvgpng-0\.1\.1(?:-(?:#{TARGET_PATTERN}))?\.gem\z/
     SHA256 = /\A[a-f0-9]{64}\z/
     MANIFEST_KEYS = %w[schema_version version artifacts].freeze
     ARTIFACT_KEYS = %w[target path sha256].freeze

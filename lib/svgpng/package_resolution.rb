@@ -104,7 +104,7 @@ module Svgpng
 
     def self.install_resolved(source, repository, destination, target)
       request = resolve_full_set(source)
-      raise VerificationError, "local full-set index did not resolve svgpng 0.1.0" unless request
+      raise VerificationError, "local full-set index did not resolve svgpng 0.1.1" unless request
 
       verify_selected_target!(request.spec.platform, target)
       installed = install_selected_package(repository, request.spec, destination, target)
@@ -150,7 +150,7 @@ module Svgpng
     private_class_method :target_for
 
     def self.resolve_full_set(source)
-      activations = Gem::Resolver.new([Gem::Dependency.new("svgpng", "= 0.1.0")],
+      activations = Gem::Resolver.new([Gem::Dependency.new("svgpng", "= 0.1.1")],
                                       Gem::Resolver::ComposedSet.new(Gem::Resolver::IndexSet.new(source),
                                                                      InstalledDependencies.new)).resolve
       activations.find { |activation| activation.spec.name == "svgpng" }

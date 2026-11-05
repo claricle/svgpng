@@ -2,7 +2,7 @@
 
 RSpec.describe Svgpng do
   it "defers unsupported-platform failure until rendering" do
-    expect(described_class::VERSION).to eq("0.1.0")
+    expect(described_class::VERSION).to eq("0.1.1")
     expect do
       described_class.render("<svg/>", profile: {}, fonts: {}, fallback_fonts: [])
     end.to raise_error(Svgpng::UnsupportedPlatformError) { |error|

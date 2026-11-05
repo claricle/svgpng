@@ -36,7 +36,7 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         if: inputs.resolution-only
         with:
-          name: svgpng-0.1.0-eight-gem-candidate-set
+          name: svgpng-0.1.1-eight-gem-candidate-set
           path: release-set
       - name: Install Linux build tools
         if: runner.os == 'Linux' && !inputs.musl
