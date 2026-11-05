@@ -7,11 +7,11 @@ require_relative "../../lib/svgpng/release_set"
 module Svgpng
   # Publishes only the immutable, previously qualified 0.1.1 set.
   module QualifiedRelease
-    RUN = 40_522_909_868
-    ARTIFACT = 12_743_646_083
-    SOURCE = "d73eaa45b671efe722ebf07682b248eee0aec79d"
-    TREE = "7b7a8ad8b84b465d477453423d794148e10f11b5"
-    MANIFEST_SHA = "368d1b3194ba4925b6bdf257562914b0dff9d526e59d54d548a7437ce311bf46"
+    RUN = 41_950_879_623
+    ARTIFACT = 13_380_623_531
+    SOURCE = "bad174afa594ed9ce2c944686746dc54b61eb002"
+    TREE = "2eb2388d93079b11fc8eae280e55101b9a70e6f4"
+    MANIFEST_SHA = "a7f988b4db44bf457f332524325f6158563da4a088d13b1f82a0f0107c7664bd"
     RUBY4_JOB = "resolution (x86_64-linux, ubuntu-22.04, false, 4.0) / qualify"
     MANIFEST = File.expand_path("checksums.json", __dir__)
     class Error < StandardError; end
