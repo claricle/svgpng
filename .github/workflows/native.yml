@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { target: arm64-darwin, runner: macos-14, musl: false }
+          - { target: arm64-darwin, runner: macos-15, musl: false }
           - { target: x86_64-darwin, runner: macos-15-intel, musl: false }
           - { target: x86_64-linux, runner: ubuntu-22.04, musl: false }
           - { target: aarch64-linux, runner: ubuntu-22.04-arm, musl: false }
@@ -64,7 +64,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { target: arm64-darwin, runner: macos-14, musl: false }
+          - { target: arm64-darwin, runner: macos-15, musl: false }
           - { target: x86_64-darwin, runner: macos-15-intel, musl: false }
           - { target: x86_64-linux, runner: ubuntu-22.04, musl: false }
           - { target: aarch64-linux, runner: ubuntu-22.04-arm, musl: false }
