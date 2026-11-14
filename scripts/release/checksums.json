@@ -1,46 +1,46 @@
 {
   "schema_version": 1,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "artifacts": [
     {
       "target": "arm64-darwin",
-      "path": "svgpng-0.1.1-arm64-darwin.gem",
-      "sha256": "62015a6363422f525cd49c30bd52bdd8fc24b96fc0b7d9216f24c9001328111c"
+      "path": "svgpng-0.1.2-arm64-darwin.gem",
+      "sha256": "3fc076a86e1cb2ecd059fc4726db22fd74afd401edab5281360a2b6519fe1e20"
     },
     {
       "target": "x86_64-darwin",
-      "path": "svgpng-0.1.1-x86_64-darwin.gem",
-      "sha256": "e55e45cb816bd4e4c269e3c6682bde2ca0002a22d59b92ffccd5f62e2bcf78e0"
+      "path": "svgpng-0.1.2-x86_64-darwin.gem",
+      "sha256": "1e8aa6cf57d349b3aa0fe855581cd6957475d6e32a0d7a06f7f826c55493781c"
     },
     {
       "target": "x86_64-linux",
-      "path": "svgpng-0.1.1-x86_64-linux.gem",
-      "sha256": "1c454a992a06a7f50b14290446da004d6813726bdf7eba186d3f09602a266414"
+      "path": "svgpng-0.1.2-x86_64-linux.gem",
+      "sha256": "6d96e52794185d7e2e990f84d80322b0ad75101252ff308a9bdc2c8928b5b7da"
     },
     {
       "target": "aarch64-linux",
-      "path": "svgpng-0.1.1-aarch64-linux.gem",
-      "sha256": "030eecb0ccbeddaef5e40a9ecfa1b73dd983b8f9f2d2bedb1049e0f9ac054de8"
+      "path": "svgpng-0.1.2-aarch64-linux.gem",
+      "sha256": "a83407fcc77a194cf50972f2def707d4b7b16971ca8447d33ea60519c138b247"
     },
     {
       "target": "x86_64-linux-musl",
-      "path": "svgpng-0.1.1-x86_64-linux-musl.gem",
-      "sha256": "d8f36c121b88133124492a3cefe6c0f82dc92754d272d735d47c7b9dbdeed34f"
+      "path": "svgpng-0.1.2-x86_64-linux-musl.gem",
+      "sha256": "114de570a825595d5564514daf9c31f5ff4022513d150d6d40df3331ae498fa5"
     },
     {
       "target": "aarch64-linux-musl",
-      "path": "svgpng-0.1.1-aarch64-linux-musl.gem",
-      "sha256": "60be28a364add86d41f872075fd970ba3f8d8e1e6034c82e436b21c127f04338"
+      "path": "svgpng-0.1.2-aarch64-linux-musl.gem",
+      "sha256": "603d40b9b20149f7d3dc8bc0ed8d0bc3fb4d78c3ec5100747e1f84d926dcb390"
     },
     {
       "target": "x64-mingw-ucrt",
-      "path": "svgpng-0.1.1-x64-mingw-ucrt.gem",
-      "sha256": "ed057013a919f290185ecce92ff9225cd974f26d104fb4ef544905073f9475b0"
+      "path": "svgpng-0.1.2-x64-mingw-ucrt.gem",
+      "sha256": "1c9c009e801331f1154697612128c2934979566c253ee4a9ab3c26622eb9dd50"
     },
     {
       "target": "ruby",
-      "path": "svgpng-0.1.1.gem",
-      "sha256": "d421d8c7efecdc9d75b002ec36e05f513dc40bb5dab93eaca0b718ee405a81e8"
+      "path": "svgpng-0.1.2.gem",
+      "sha256": "00604867fc2ede79ef8d0cc80f35f1983a64ab662036414beb67c639a17d7e99"
     }
   ]
 }
