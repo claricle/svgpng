@@ -5,7 +5,7 @@ require "net/http"
 require_relative "../../lib/svgpng/release_set"
 
 module Svgpng
-  # Publishes only the immutable, previously qualified 0.1.1 set.
+  # Publishes only the immutable, previously qualified 0.1.2 set.
   module QualifiedRelease
     RUN = 41_950_879_623
     ARTIFACT = 13_380_623_531
@@ -33,7 +33,7 @@ module Svgpng
 
     def self.verify_artifact!(artifact)
       assert!(artifact.values_at("id", "name", "expired") ==
-        [ARTIFACT, "svgpng-0.1.1-eight-gem-candidate-set", false] &&
+        [ARTIFACT, "svgpng-0.1.2-eight-gem-candidate-set", false] &&
         artifact.dig("workflow_run", "id") == RUN && artifact.dig("workflow_run", "head_sha") == SOURCE,
               "wrong or expired qualification artifact")
     end
@@ -112,6 +112,6 @@ if $PROGRAM_NAME == __FILE__
     release.assert!(%w[verify publish].include?(command), "expected provenance, verify or publish")
     paths = release.verify!(File.expand_path(directory))
     release.publish!(paths) if command == "publish"
-    puts "Verified exact eight approved SVGPNG 0.1.1 gems"
+    puts "Verified exact eight approved SVGPNG 0.1.2 gems"
   end
 end

@@ -11,7 +11,7 @@ RSpec.describe Svgpng::QualifiedRelease do
       "head_repository" => { "full_name" => "claricle/svgpng" } }
   end
   let(:artifact) do
-    { "id" => described_class::ARTIFACT, "name" => "svgpng-0.1.1-eight-gem-candidate-set", "expired" => false,
+    { "id" => described_class::ARTIFACT, "name" => "svgpng-0.1.2-eight-gem-candidate-set", "expired" => false,
       "workflow_run" => { "id" => described_class::RUN, "head_sha" => described_class::SOURCE } }
   end
   let(:jobs) do
@@ -86,20 +86,20 @@ RSpec.describe Svgpng::QualifiedRelease do
 
   it "treats HTTP 404 and 403 as unpublished artifacts" do
     allow(Net::HTTP).to receive(:get_response).and_return(Net::HTTPNotFound.new("1.1", "404", "Not Found"))
-    expect(described_class.remote_digest("svgpng-0.1.1.gem")).to be_nil
+    expect(described_class.remote_digest("svgpng-0.1.2.gem")).to be_nil
     allow(Net::HTTP).to receive(:get_response).and_return(Net::HTTPForbidden.new("1.1", "403", "Forbidden"))
-    expect(described_class.remote_digest("svgpng-0.1.1.gem")).to be_nil
+    expect(described_class.remote_digest("svgpng-0.1.2.gem")).to be_nil
   end
 
   it "stops publication on a server-side download failure" do
     allow(Net::HTTP).to receive(:get_response).and_return(Net::HTTPBadGateway.new("1.1", "502", "Bad Gateway"))
-    expect { described_class.remote_digest("svgpng-0.1.1.gem") }
+    expect { described_class.remote_digest("svgpng-0.1.2.gem") }
       .to raise_error(described_class::Error, /download failed: 502/)
   end
 
   context "with local candidate bytes" do
     let(:directory) { Dir.mktmpdir("svgpng-publisher-spec-") }
-    let(:path) { File.join(directory, "svgpng-0.1.1.gem") }
+    let(:path) { File.join(directory, "svgpng-0.1.2.gem") }
     let(:digest) { Digest::SHA256.hexdigest("qualified bytes") }
     let(:push) { spy("push") }
 

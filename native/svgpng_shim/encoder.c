@@ -10,8 +10,8 @@
 #if PNG_LIBPNG_VER != 10659
 #error "svgpng requires libpng 1.6.59"
 #endif
-#if ZLIB_VERNUM != 0x1320
-#error "svgpng requires zlib 1.3.2"
+#if ZLIB_VERNUM != 0x1400
+#error "svgpng requires zlib 1.4"
 #endif
 #ifndef PNG_USER_MEM_SUPPORTED
 #error "svgpng requires libpng user memory callbacks"
@@ -202,7 +202,7 @@ svgpng_v1_png_status svgpng_v1_png_encode(
     if (source_bytes > UINTPTR_MAX - (uintptr_t)source) {
         return SVGPNG_V1_PNG_OVERFLOW;
     }
-    if (png_access_version_number() != 10659 || strcmp(zlibVersion(), "1.3.2") != 0) {
+    if (png_access_version_number() != 10659 || strcmp(zlibVersion(), "1.4") != 0) {
         return SVGPNG_V1_PNG_VERSION_MISMATCH;
     }
     state = calloc(1, sizeof(*state));
