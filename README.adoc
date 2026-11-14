@@ -46,14 +46,14 @@ bundle exec rspec spec/renderer_font_integration_spec.rb spec/svgpng/golden_spec
 See link:docs/goldens.md[the golden workflow] for corpus coverage and intentional
 regeneration.
 
-The PNG encoder source requires libpng 1.6.59 and zlib 1.3.2. To run its
+The PNG encoder source requires libpng 1.6.59 and zlib 1.4. To run its
 round-trip, chunk-profile, deterministic-byte, and allocation-failure assertions,
 provide verified static dependency installations:
 
 [source,sh]
 ----
 SVGPNG_LIBPNG_PREFIX=/path/to/libpng-1.6.59 \
-SVGPNG_ZLIB_PREFIX=/path/to/zlib-1.3.2 \
+SVGPNG_ZLIB_PREFIX=/path/to/zlib-1.4 \
 bundle exec rake native:check_encoder
 ----
 

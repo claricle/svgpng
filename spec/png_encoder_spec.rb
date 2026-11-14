@@ -6,7 +6,7 @@ require "tmpdir"
 RSpec.describe "Pinned native PNG encoder" do
   [
     [10_658, "0x1320", "svgpng requires libpng 1.6.59"],
-    [10_659, "0x1310", "svgpng requires zlib 1.3.2"]
+    [10_659, "0x1310", "svgpng requires zlib 1.4"]
   ].each do |png_version, zlib_version, diagnostic|
     it "rejects incompatible headers with #{diagnostic}" do
       # These version-only mock headers test rejection, never encoding. Full
