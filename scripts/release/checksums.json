@@ -5,42 +5,42 @@
     {
       "target": "arm64-darwin",
       "path": "svgpng-0.1.2-arm64-darwin.gem",
-      "sha256": "3fc076a86e1cb2ecd059fc4726db22fd74afd401edab5281360a2b6519fe1e20"
+      "sha256": "6440ced36fb8db67d1f7a31e1965036b8bc24b9c231bea58ee16b5be4210b002"
     },
     {
       "target": "x86_64-darwin",
       "path": "svgpng-0.1.2-x86_64-darwin.gem",
-      "sha256": "1e8aa6cf57d349b3aa0fe855581cd6957475d6e32a0d7a06f7f826c55493781c"
+      "sha256": "50478ce7bfbbab5a3e10bc48160e2095b70243bf1a7a0974effcb14de4e5a45e"
     },
     {
       "target": "x86_64-linux",
       "path": "svgpng-0.1.2-x86_64-linux.gem",
-      "sha256": "6d96e52794185d7e2e990f84d80322b0ad75101252ff308a9bdc2c8928b5b7da"
+      "sha256": "2a50f8bb30caf2f1027b491fba0ca8098e241440be04b38443eab894f13ec517"
     },
     {
       "target": "aarch64-linux",
       "path": "svgpng-0.1.2-aarch64-linux.gem",
-      "sha256": "a83407fcc77a194cf50972f2def707d4b7b16971ca8447d33ea60519c138b247"
+      "sha256": "f4fa0fba58cdff5269d6d4c8a665836e34a0481207da16079592567cf80f1797"
     },
     {
       "target": "x86_64-linux-musl",
       "path": "svgpng-0.1.2-x86_64-linux-musl.gem",
-      "sha256": "114de570a825595d5564514daf9c31f5ff4022513d150d6d40df3331ae498fa5"
+      "sha256": "021819a3ed6f5e668d880faabb04c5611f6d0f84aece789ef94d1fd656573b05"
     },
     {
       "target": "aarch64-linux-musl",
       "path": "svgpng-0.1.2-aarch64-linux-musl.gem",
-      "sha256": "603d40b9b20149f7d3dc8bc0ed8d0bc3fb4d78c3ec5100747e1f84d926dcb390"
+      "sha256": "cd327f72e43bc0b3a22ddf68669c6181c781799e62800721254364a38a151dfd"
     },
     {
       "target": "x64-mingw-ucrt",
       "path": "svgpng-0.1.2-x64-mingw-ucrt.gem",
-      "sha256": "1c9c009e801331f1154697612128c2934979566c253ee4a9ab3c26622eb9dd50"
+      "sha256": "66dd3f27338415313bd50d2c7eaa5ec315d0c5343576bbe1b9636072df3a7735"
     },
     {
       "target": "ruby",
       "path": "svgpng-0.1.2.gem",
-      "sha256": "00604867fc2ede79ef8d0cc80f35f1983a64ab662036414beb67c639a17d7e99"
+      "sha256": "6f55153379364902e9bb98c7c24ce2de19148ce057972d3cad2a4ca730ec26eb"
     }
   ]
 }
