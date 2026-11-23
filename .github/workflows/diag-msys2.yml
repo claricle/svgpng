@@ -1,6 +1,7 @@
 name: Diagnose msys2 keyring failure
 on:
-  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/diag-msys2.yml']
 permissions:
   contents: read
 jobs:
