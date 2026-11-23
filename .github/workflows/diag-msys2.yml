@@ -1,0 +1,64 @@
+name: Diagnose msys2 keyring failure
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reproduce:
+    name: V1 reproduce (location + install)
+    runs-on: windows-2022
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          location: ${{ runner.temp }}/svgpng-msys2
+          path-type: inherit
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-python
+  bootstrap:
+    name: V2 no-install + manual keyring bootstrap
+    runs-on: windows-2022
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          location: ${{ runner.temp }}/svgpng-msys2
+          path-type: inherit
+      - name: Inspect keyring before init
+        shell: msys2 {0}
+        run: |
+          uname -a
+          echo "--- /etc/pacman.d ---"
+          ls -la /etc/pacman.d/ || true
+          echo "--- keyrings dir ---"
+          ls -la /usr/share/pacman/keyrings/ || true
+      - name: Bootstrap keyring and install tools
+        shell: msys2 {0}
+        run: |
+          set -x
+          pacman-key --init
+          pacman-key --populate msys2
+          pacman -S --needed --overwrite '*' \
+            mingw-w64-ucrt-x86_64-gcc \
+            mingw-w64-ucrt-x86_64-cmake \
+            mingw-w64-ucrt-x86_64-ninja \
+            mingw-w64-ucrt-x86_64-python
+          gcc --version | head -1
+          ninja --version
+          cmake --version | head -1
+  default-location:
+    name: V3 default location + install
+    runs-on: windows-2022
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          path-type: inherit
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-python
