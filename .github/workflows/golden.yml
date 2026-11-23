@@ -51,10 +51,23 @@ jobs:
           msystem: UCRT64
           location: ${{ runner.temp }}/svgpng-msys2
           path-type: inherit
-          install: >-
-            mingw-w64-ucrt-x86_64-gcc
-            mingw-w64-ucrt-x86_64-cmake
-            mingw-w64-ucrt-x86_64-ninja
+      # The action's internal pacman install fails when ruby/setup-ruby has run
+      # first: the fresh installer's post-install scripts (which initialize the
+      # pacman keyring) never fire, and the shipped databases are signed with a
+      # key no initialized keyring knows. Initializing the keyring explicitly in
+      # a login shell and installing the tools ourselves is deterministic; the
+      # pacman arguments match what the action would have run.
+      - name: Bootstrap MSYS2 keyring and install UCRT build tools
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          set -e
+          pacman-key --init
+          pacman-key --populate msys2
+          pacman -S --noconfirm --needed --overwrite '*' \
+            mingw-w64-ucrt-x86_64-gcc \
+            mingw-w64-ucrt-x86_64-cmake \
+            mingw-w64-ucrt-x86_64-ninja \
             mingw-w64-ucrt-x86_64-python
       - name: Install exact Rust toolchain
         if: ${{ !inputs.musl && !inputs.resolution-only }}
